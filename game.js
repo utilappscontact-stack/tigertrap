@@ -469,10 +469,27 @@ const SAFE_VARIANTS = [0,2];
 let curRun = 'campaign';
 let runtimeLevel = null;
 
-const STORAGE_KEY   = 'tiger_trap_progress_v1';
-const ANALYTICS_KEY = 'tiger_trap_analytics_v1';
-const DAILY_KEY     = 'tiger_trap_daily_v1';
-const STREAK_KEY    = 'tiger_trap_streak_v1';
+const STORAGE_KEY    = 'tiger_trap_progress_v1';
+const STORAGE_KEY_V2 = 'tiger_trap_progress_v2';
+const ANALYTICS_KEY  = 'tiger_trap_analytics_v1';
+const DAILY_KEY      = 'tiger_trap_daily_v1';
+const STREAK_KEY     = 'tiger_trap_streak_v1';
+
+function migrateProgressV1toV2() {
+  if (localStorage.getItem(STORAGE_KEY_V2)) return;
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) return;
+  try {
+    const v1 = JSON.parse(raw);
+    const v2 = {
+      ...v1,
+      stars:        { goat: {}, tiger: {} },
+      attemptCount: { goat: {}, tiger: {} },
+    };
+    localStorage.setItem(STORAGE_KEY_V2, JSON.stringify(v2));
+    // v1 key left intact as backup
+  } catch(e) {}
+}
 
 // -- Daily challenge helpers (declared early — used by resetAllProgress etc.) --
 function getTodayKey() {
@@ -500,8 +517,9 @@ let levelSelectMode = 'goat';
 let activeTutorialMode = null;
 
 function loadProgress() {
+  migrateProgressV1toV2();
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(STORAGE_KEY_V2);
     const parsed = raw ? JSON.parse(raw) : {};
     return {
       goatUnlocked: Math.max(1, parsed.goatUnlocked || 1),
@@ -516,14 +534,17 @@ function loadProgress() {
         goat: !!(parsed.tutorials && parsed.tutorials.goat),
         tiger: !!(parsed.tutorials && parsed.tutorials.tiger),
       },
+      stars:        { goat: parsed.stars?.goat || {}, tiger: parsed.stars?.tiger || {} },
+      attemptCount: { goat: parsed.attemptCount?.goat || {}, tiger: parsed.attemptCount?.tiger || {} },
+      hintsUsedThisLevel: 0,
     };
   } catch (e) {
-    return { goatUnlocked:1, tigerUnlocked:1, goatCurrent:0, tigerCurrent:0, goatCleared:0, tigerCleared:0, goatPar:{}, tigerPar:{}, tutorials:{goat:false,tiger:false} };
+    return { goatUnlocked:1, tigerUnlocked:1, goatCurrent:0, tigerCurrent:0, goatCleared:0, tigerCleared:0, goatPar:{}, tigerPar:{}, tutorials:{goat:false,tiger:false}, stars:{goat:{},tiger:{}}, attemptCount:{goat:{},tiger:{}}, hintsUsedThisLevel:0 };
   }
 }
 
 function saveProgress() {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); } catch(e) {}
+  try { localStorage.setItem(STORAGE_KEY_V2, JSON.stringify(progress)); } catch(e) {}
 }
 
 function trackEvent(name, payload = {}) {
@@ -573,6 +594,17 @@ function registerCampaignWin() {
   if (prev === undefined || S.moveCount < prev) {
     progress[parKey][lvlIdx] = S.moveCount;
   }
+  // Compute star rating for this attempt
+  const lvl = runtimeLevel;
+  const atPar    = lvl && S.moveCount <= lvl.moveLimit;
+  const firstTry = (progress.attemptCount[curMode][lvlIdx] || 0) === 1;
+  const noHints  = (progress.hintsUsedThisLevel || 0) === 0;
+  const newStars  = (atPar && firstTry && noHints) ? 3
+                  : atPar                          ? 2
+                  :                                  1;
+  const prevStars = progress.stars[curMode][lvlIdx] || 0;
+  progress.stars[curMode][lvlIdx] = Math.max(prevStars, newStars);
+
   if (curMode === 'goat') {
     progress.goatUnlocked = Math.max(progress.goatUnlocked, nextUnlock);
     progress.goatCurrent = Math.min(total-1, Math.max(progress.goatCurrent, Math.min(lvlIdx + 1, total-1)));
@@ -584,7 +616,7 @@ function registerCampaignWin() {
   }
   saveProgress();
   renderStartProgress();
-  trackEvent('level_complete', { mode:curMode, level:lvlIdx+1, run:curRun });
+  trackEvent('level_complete', { mode:curMode, level:lvlIdx+1, run:curRun, stars:newStars });
 }
 
 function markTutorialSeen(mode) {
@@ -639,20 +671,18 @@ function openLevelSelect(mode) {
       }
       const goalShort = lvl.goal || '';
       // Par star
-      const best = progress[`${mode}Par`]?.[i];
-      let parStar = '';
-      if (cleared && best !== undefined) {
-        const isUnderPar = best < lvl.moveLimit;
-        const isPar = best <= lvl.moveLimit;
-        if (isUnderPar) parStar = '<span style="color:#FFD060;font-size:9px;"> ★</span>';
-        else if (isPar) parStar = '<span style="color:#A07838;font-size:9px;"> ★</span>';
-      } else if (cleared) {
-        parStar = '<span style="color:#4A3010;font-size:9px;"> –</span>';
+      const starCount = progress.stars?.[mode]?.[i] || 0;
+      let starsHtml = '';
+      if (cleared) {
+        starsHtml = `<span class="level-stars" data-stars="${starCount}">${
+          [1,2,3].map(s => `<span class="level-star ${s <= starCount ? 'filled' : 'empty'}">${s <= starCount ? '★' : '☆'}</span>`).join('')
+        }</span>`;
       }
-      return `<button class="level-btn level-btn-mission ${locked?'locked':''} ${current?'current':''} ${cleared?'cleared':''}" ${locked?'disabled':''} data-mode="${mode}" data-level="${i}">
-        <span class="lbm-num">${i+1}${parStar}</span>
+      return `<button class="level-btn level-btn-mission ${locked?'locked':''} ${current?'current':''} ${cleared?'cleared':''}" ${locked?'disabled':''} data-mode="${mode}" data-level="${i}"${cleared ? ` data-stars="${starCount}"` : ''}>
+        <span class="lbm-num">${i+1}</span>
         ${typeLabel ? `<span class="lbm-type">${typeLabel}</span>` : ''}
         <span class="lbm-sub">${goalShort}</span>
+        ${starsHtml}
       </button>`;
     }).join('');
   }
@@ -1288,7 +1318,7 @@ function resetAllProgress() {
     'Yes, reset all',
     () => {
       try {
-        [STORAGE_KEY, ANALYTICS_KEY, STREAK_KEY, DAILY_KEY].forEach(k => localStorage.removeItem(k));
+        [STORAGE_KEY, STORAGE_KEY_V2, ANALYTICS_KEY, STREAK_KEY, DAILY_KEY].forEach(k => localStorage.removeItem(k));
       } catch(e) {}
       hideOverlay();
       location.reload();
@@ -1451,6 +1481,13 @@ function loadLevel(idx) {
   runtimeLevel = lvl;
   S = mkState(lvl, curMode);
   history = []; aiHint = null; playerHint = null; isPaused = false;
+
+  if (curRun === 'campaign') {
+    progress.hintsUsedThisLevel = 0;
+    const ac = progress.attemptCount[curMode];
+    ac[idx] = (ac[idx] || 0) + 1;
+    saveProgress();
+  }
 
   // Daily mode board identity
   const bc = document.getElementById('board-container');
@@ -2882,6 +2919,9 @@ function showHintMove() {
   const move = getHintMove();
   if (!move) return;
   playerHint = {from:move.from, to:move.to, end:performance.now()+2200};
+  if (curRun === 'campaign') {
+    progress.hintsUsedThisLevel = (progress.hintsUsedThisLevel || 0) + 1;
+  }
   haptic.tap();
   updateHUD();
 }
