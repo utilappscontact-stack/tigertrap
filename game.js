@@ -473,6 +473,7 @@ const STORAGE_KEY    = 'tiger_trap_progress_v1';
 const STORAGE_KEY_V2 = 'tiger_trap_progress_v2';
 const ANALYTICS_KEY  = 'tiger_trap_analytics_v1';
 const DAILY_KEY      = 'tiger_trap_daily_v1';
+const DAILY_KEY_V2   = 'tiger_trap_daily_v2';
 const STREAK_KEY     = 'tiger_trap_streak_v1';
 
 function migrateProgressV1toV2() {
@@ -496,20 +497,48 @@ function getTodayKey() {
   const d = new Date();
   return `${d.getUTCFullYear()}-${d.getUTCMonth()+1}-${d.getUTCDate()}`;
 }
-function markDailySolved(mode) {
+
+function migrateDailyV1toV2() {
+  if (localStorage.getItem(DAILY_KEY_V2)) return;
+  const raw = localStorage.getItem(DAILY_KEY);
+  if (!raw) return;
   try {
-    const raw  = localStorage.getItem(DAILY_KEY);
-    const data = raw ? JSON.parse(raw) : {};
-    data[`${getTodayKey()}_${mode}`] = true;
-    localStorage.setItem(DAILY_KEY, JSON.stringify(data));
+    const v1 = JSON.parse(raw);
+    const v2 = { goatSolved: {}, tigerSolved: {} };
+    for (const key of Object.keys(v1)) {
+      if (key.endsWith('_goat'))  v2.goatSolved[key.slice(0, -5)]  = true;
+      else if (key.endsWith('_tiger')) v2.tigerSolved[key.slice(0, -6)] = true;
+    }
+    localStorage.setItem(DAILY_KEY_V2, JSON.stringify(v2));
   } catch(e) {}
 }
-function isDailySolvedToday(mode) {
+
+function markDailySolved(side) {
+  migrateDailyV1toV2();
   try {
-    const raw = localStorage.getItem(DAILY_KEY);
+    const raw  = localStorage.getItem(DAILY_KEY_V2);
+    const data = raw ? JSON.parse(raw) : { goatSolved: {}, tigerSolved: {} };
+    if (!data.goatSolved)  data.goatSolved  = {};
+    if (!data.tigerSolved) data.tigerSolved = {};
+    const bucket = side === 'goat' ? 'goatSolved' : 'tigerSolved';
+    data[bucket][getTodayKey()] = true;
+    localStorage.setItem(DAILY_KEY_V2, JSON.stringify(data));
+  } catch(e) {}
+}
+
+function isDailySolvedToday(side) {
+  migrateDailyV1toV2();
+  try {
+    const raw = localStorage.getItem(DAILY_KEY_V2);
     if (!raw) return false;
-    return !!JSON.parse(raw)[`${getTodayKey()}_${mode}`];
+    const data = JSON.parse(raw);
+    const bucket = side === 'goat' ? 'goatSolved' : 'tigerSolved';
+    return !!(data[bucket] && data[bucket][getTodayKey()]);
   } catch(e) { return false; }
+}
+
+function isDailyCompleteToday() {
+  return isDailySolvedToday('goat') && isDailySolvedToday('tiger');
 }
 
 let progress = loadProgress();
@@ -579,10 +608,9 @@ function setCurrentIndex(mode, idx) {
 
 function registerCampaignWin() {
   if (curRun !== 'campaign') {
-    // For daily wins, track streak
     if (curRun === 'daily') {
       markDailySolved(curMode);
-      updateStreak();
+      if (isDailyCompleteToday()) updateStreak();
     }
     return;
   }
@@ -760,7 +788,7 @@ function getActiveLevel(idx=0) {
   if (curRun==='campaign') return pool[idx] || pool[0];
 
   const seedBase = curRun==='daily'
-    ? daySeed() + idx * 97 + (curMode==='goat' ? 17 : 31)
+    ? daySeed() + idx * 97
     : ((Date.now()>>>0) + idx*97 + (curMode==='goat'?7:19));
 
   const rand = mulberry32(seedBase);
@@ -1318,7 +1346,7 @@ function resetAllProgress() {
     'Yes, reset all',
     () => {
       try {
-        [STORAGE_KEY, STORAGE_KEY_V2, ANALYTICS_KEY, STREAK_KEY, DAILY_KEY].forEach(k => localStorage.removeItem(k));
+        [STORAGE_KEY, STORAGE_KEY_V2, ANALYTICS_KEY, STREAK_KEY, DAILY_KEY, DAILY_KEY_V2].forEach(k => localStorage.removeItem(k));
       } catch(e) {}
       hideOverlay();
       location.reload();
@@ -1499,7 +1527,8 @@ function loadLevel(idx) {
   } else if (curRun === 'daily') {
     const d = new Date();
     const stamp = d.toLocaleDateString('en-US', { month:'short', day:'numeric' });
-    _lvlDisplay = `Daily · ${stamp}`;
+    const sideLabel = curMode === 'goat' ? 'Goat' : 'Tiger';
+    _lvlDisplay = `Daily · ${stamp} · ${sideLabel}`;
   } else {
     _lvlDisplay = 'Endless Mode';
   }
@@ -1830,13 +1859,17 @@ function execGoatMove(from, to) {
     addFlash(S.tigers[0],'rgba(80,210,80,0.85)');
     const m=S.moveCount;
     registerCampaignWin();
-    const _doWinOverlay = () => showOverlay('🔒','Trapped!',`Solved in ${m} move${m>1?'s':''}.`,
-      (curRun==='campaign' && lvlIdx<GOAT_LEVELS.length-1)?'Next →':'Play Again',
-      () => {
-        if (curRun==='campaign' && lvlIdx<GOAT_LEVELS.length-1) {
-          showLevelIntro(lvlIdx+1, () => startMode(curMode, lvlIdx+1));
-        } else { startMode(curMode, 0); }
-      },
+    const _doWinOverlay = () => showOverlay('🔒','Trapped!',
+      curRun==='daily'
+        ? `Goat side done in ${m} move${m>1?'s':''}. Now play as Tiger.`
+        : `Solved in ${m} move${m>1?'s':''}.`,
+      (curRun==='campaign' && lvlIdx<GOAT_LEVELS.length-1) ? 'Next →'
+        : curRun==='daily' ? 'Play Tiger →'
+        : 'Play Again',
+      (curRun==='campaign' && lvlIdx<GOAT_LEVELS.length-1)
+        ? () => showLevelIntro(lvlIdx+1, () => startMode(curMode, lvlIdx+1))
+        : curRun==='daily' ? startDailyTigerSide
+        : () => startMode(curMode, 0),
       'Menu', showStart,
       {mode:'goat',title:'Trapped!',moves:m,moveLimit:S.moveLimit,won:true,run:curRun},
       'up'
@@ -1919,17 +1952,26 @@ function execTigerSlide(to) {
     S.phase='won'; triggerShake(10,400); haptic.trap();
     addFlash(to,'rgba(80,210,80,0.85)');
     registerCampaignWin();
-    const _doEscOverlay = () => showOverlay('🏃','Escaped!','You broke free!',
-      (curRun==='campaign' && lvlIdx<TIGER_LEVELS.length-1)?'Next →':'Play Again',
-      () => {
-        if (curRun==='campaign' && lvlIdx<TIGER_LEVELS.length-1) {
-          showLevelIntro(lvlIdx+1, () => startMode(curMode, lvlIdx+1));
-        } else { startMode(curMode, 0); }
-      },
-      'Menu',showStart,
-      {mode:'tiger',title:'Escaped!',moves:S.moveCount,moveLimit:S.moveLimit,won:true,run:curRun},
-      'up'
-    );
+    const _doEscOverlay = () => {
+      const _dailyDone = curRun==='daily' && isDailyCompleteToday();
+      showOverlay('🏃',
+        _dailyDone ? 'Daily Complete!' : 'Escaped!',
+        _dailyDone
+          ? `Tiger side done in ${S.moveCount} move${S.moveCount>1?'s':''}. Both sides solved!`
+          : 'You broke free!',
+        (curRun==='campaign' && lvlIdx<TIGER_LEVELS.length-1) ? 'Next →'
+          : _dailyDone ? 'Back to Menu'
+          : 'Play Again',
+        () => {
+          if (curRun==='campaign' && lvlIdx<TIGER_LEVELS.length-1) {
+            showLevelIntro(lvlIdx+1, () => startMode(curMode, lvlIdx+1));
+          } else { showStart(); }
+        },
+        'Menu', showStart,
+        {mode:'tiger',title:'Escaped!',moves:S.moveCount,moveLimit:S.moveLimit,won:true,run:curRun},
+        'up'
+      );
+    };
     setTimeout(_doEscOverlay, 650);
     return;
   }
@@ -1951,17 +1993,26 @@ function execTigerJump(jmp) {
     S.phase='won'; triggerShake(14,500); haptic.trap();
     registerCampaignWin();
     const _captCount = S.capturedGoats;
-    const _doCapOverlay = () => showOverlay('<img src="assets/pieces/tiger-piece.png" alt="" style="width:52px;height:52px;object-fit:contain;">','Tiger!',`Captured ${_captCount} goat${_captCount>1?'s':''}!`,
-      (curRun==='campaign' && lvlIdx<TIGER_LEVELS.length-1)?'Next →':'Play Again',
-      () => {
-        if (curRun==='campaign' && lvlIdx<TIGER_LEVELS.length-1) {
-          showLevelIntro(lvlIdx+1, () => startMode(curMode, lvlIdx+1));
-        } else { startMode(curMode, 0); }
-      },
-      'Menu',showStart,
-      {mode:'tiger',title:'Captured!',moves:S.moveCount,moveLimit:S.moveLimit,won:true,run:curRun},
-      'up'
-    );
+    const _doCapOverlay = () => {
+      const _dailyDone = curRun==='daily' && isDailyCompleteToday();
+      showOverlay('<img src="assets/pieces/tiger-piece.png" alt="" style="width:52px;height:52px;object-fit:contain;">',
+        _dailyDone ? 'Daily Complete!' : 'Tiger!',
+        _dailyDone
+          ? `Tiger side done in ${S.moveCount} move${S.moveCount>1?'s':''}. Both sides solved!`
+          : `Captured ${_captCount} goat${_captCount>1?'s':''}!`,
+        (curRun==='campaign' && lvlIdx<TIGER_LEVELS.length-1) ? 'Next →'
+          : _dailyDone ? 'Back to Menu'
+          : 'Play Again',
+        () => {
+          if (curRun==='campaign' && lvlIdx<TIGER_LEVELS.length-1) {
+            showLevelIntro(lvlIdx+1, () => startMode(curMode, lvlIdx+1));
+          } else { showStart(); }
+        },
+        'Menu', showStart,
+        {mode:'tiger',title:'Captured!',moves:S.moveCount,moveLimit:S.moveLimit,won:true,run:curRun},
+        'up'
+      );
+    };
     triggerTrapSequence(S.tigers[0], S.moveCount, _doCapOverlay);
     return;
   }
@@ -2005,13 +2056,22 @@ function runGoatAI() {
     S.phase='won'; triggerShake(10,400); haptic.trap();
     registerCampaignWin();
     trackEvent('level_win', { mode:curMode, level:lvlIdx+1, run:curRun, stalemate:true });
-    setTimeout(()=>showOverlay('🔒','Stalemate!','The goats have no moves left.',
-      (curRun==='campaign' && lvlIdx<TIGER_LEVELS.length-1)?'Next →':'Play Again',
-      () => {
-        if (curRun==='campaign' && lvlIdx<TIGER_LEVELS.length-1) { loadLevel(lvlIdx+1); }
-        else { loadLevel(lvlIdx); }
-      },
-      'Menu', showStart), 480);
+    setTimeout(()=>{
+      const _dailyDone = curRun==='daily' && isDailyCompleteToday();
+      showOverlay('🔒',
+        _dailyDone ? 'Daily Complete!' : 'Stalemate!',
+        _dailyDone
+          ? 'Goats had no moves. Both sides solved!'
+          : 'The goats have no moves left.',
+        (curRun==='campaign' && lvlIdx<TIGER_LEVELS.length-1) ? 'Next →'
+          : _dailyDone ? 'Back to Menu'
+          : 'Play Again',
+        () => {
+          if (curRun==='campaign' && lvlIdx<TIGER_LEVELS.length-1) { loadLevel(lvlIdx+1); }
+          else { showStart(); }
+        },
+        'Menu', showStart);
+    }, 480);
     return;
   }
 
@@ -3002,6 +3062,16 @@ function showStart() {
   document.getElementById('start-screen').classList.remove('hidden');
   document.getElementById('game-screen').classList.add('hidden');
 }
+function startDailyTigerSide() {
+  hideOverlay();
+  curMode = 'tiger'; isPaused = false; playerHint = null;
+  requestAnimationFrame(() => {
+    setupCanvas();
+    loadLevel(0);
+    trackEvent('daily_tiger_start', {});
+  });
+}
+
 function startMode(mode, forcedIndex=null) {
   curMode=mode; isPaused=false; playerHint=null;
   if (curRun === 'campaign') {
