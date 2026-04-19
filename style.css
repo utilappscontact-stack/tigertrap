@@ -929,7 +929,12 @@ body.preload * { transition:none !important; animation:none !important; }
 
 /* ─── ONBOARDING OVERLAY ─── */
 #onboard-overlay {
-  position:fixed; inset:0; background:#0D0905; z-index:70;
+  position:fixed; inset:0; z-index:70;
+  background:
+    url("assets/bg/stone-texture.jpg") repeat,
+    linear-gradient(175deg, #130C05 0%, #0D0903 100%);
+  background-blend-mode: multiply;
+  background-size: 400px auto, auto;
   display:flex; flex-direction:column; align-items:center;
   justify-content:center; gap:20px; padding:32px 24px;
 }
@@ -943,22 +948,54 @@ body.preload * { transition:none !important; animation:none !important; }
 }
 .ob-card.active { opacity:1; pointer-events:auto; }
 .ob-icon { font-size:52px; line-height:1; }
-.ob-title { font-size:24px; color:#EDE0C4; letter-spacing:1px; }
-.ob-body { font-size:13px; color:#8A6030; line-height:1.7; max-width:260px; }
+.ob-icon-img {
+  width:52px; height:52px; object-fit:contain;
+  filter:drop-shadow(0 3px 8px rgba(0,0,0,0.65));
+}
+.ob-title {
+  font-size:24px; letter-spacing:5px; text-transform:uppercase;
+  color:#E8A84A; text-align:center;
+  text-shadow:
+    0  1px 0  rgba(255,220,140,.30),
+    0 -1px 0  rgba(0,0,0,.90),
+    0  0   22px rgba(200,100,20,.30);
+}
+.ob-body {
+  font-size:11px; letter-spacing:3px; text-transform:uppercase;
+  color:#8A6030; text-align:center; line-height:1.8; max-width:260px;
+}
 .ob-dots { display:flex; gap:8px; }
-.ob-dot { width:6px; height:6px; border-radius:50%; background:#2A1A08; transition:background .25s; }
-.ob-dot.active { background:#E8871A; }
+.ob-dot {
+  width:6px; height:6px; border-radius:50%;
+  background:rgba(50,28,10,0.80);
+  border:1px solid rgba(120,80,35,0.40);
+  transition:background .25s, border-color .25s;
+}
+.ob-dot.active {
+  background:rgba(200,130,40,0.90);
+  border-color:rgba(232,155,50,0.60);
+}
 #ob-next {
-  background:#E8871A; border:none; color:#120A04;
-  padding:13px 40px; border-radius:9px; font-size:14px;
-  font-family:inherit; font-weight:bold; letter-spacing:1.5px;
-  cursor:pointer; min-width:180px; min-height:44px;
+  background: linear-gradient(175deg, #2E1A08 0%, #1E1006 100%);
+  border: 1px solid rgba(200,120,40,.50);
+  border-bottom: 2px solid rgba(100,50,10,.55);
+  color: #D49040;
+  text-shadow: 0 1px 2px rgba(0,0,0,.8);
+  box-shadow: inset 0 1px 0 rgba(255,200,100,.10), 0 2px 8px rgba(0,0,0,.45);
+  padding:13px 40px; border-radius:6px; font-size:14px;
+  font-family:inherit; font-weight:bold; letter-spacing:2.5px;
+  text-transform:uppercase; cursor:pointer; min-width:180px; min-height:44px;
+}
+#ob-next:hover {
+  border-color:rgba(232,155,60,.68);
+  color:#EAA848;
 }
 #ob-skip {
-  background:none; border:none; color:#4A3010;
+  background:none; border:none; color:#4A3018;
   font-size:11px; letter-spacing:2px; text-transform:uppercase;
   cursor:pointer; font-family:inherit; padding:8px; min-height:44px;
 }
+#ob-skip:hover { color:#7A5830; }
 
 /* ─── SWIPE HINT ─── */
 #swipe-hint {
