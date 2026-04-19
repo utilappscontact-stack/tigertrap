@@ -120,11 +120,6 @@ const GOAT_CORE_LEVELS = [
     tigers:[0], goats:[1,2,5,10,12,7], hint:{from:7,to:6},
   },
   {
-    title:'Master Trap', label:'Master Trap',
-    goal:'Trap in 3', moveLimit:3, maxCaptures:2, exactMoves:false, difficulty:6,
-    tigers:[4], goats:[1,2,3,8,13,14,19], hint:{from:1,to:0},
-  },
-  {
     title:'Iron Ring', label:'Iron Ring',
     goal:'Trap in 1', moveLimit:1, maxCaptures:1, exactMoves:true, difficulty:5,
     tigers:[0], goats:[1,5,6,10,12,7], hint:{from:7,to:2},
@@ -140,43 +135,19 @@ const GOAT_CORE_LEVELS = [
     tigers:[19], goats:[9,12,13,14,17,22,23,24], hint:{from:13,to:18},
   },
   {
-    title:'Closing Net', label:'Closing Net',
-    goal:'Trap in 2', moveLimit:2, maxCaptures:2, exactMoves:false, difficulty:5,
-    tigers:[9], goats:[4,7,13,14,17,19,3], hint:{from:3,to:8},
+    title:'Master Trap', label:'Master Trap',
+    goal:'Trap in 2', moveLimit:2, maxCaptures:1, exactMoves:false, difficulty:6,
+    tigers:[4], goats:[1,3,7,8,13,14,17,19], hint:{from:1,to:2},
   },
   {
     title:'Tight Corner', label:'Tight Corner',
-    goal:'Trap in 4', moveLimit:4, maxCaptures:2, exactMoves:false, difficulty:6,
-    tigers:[4], goats:[0,1,2,3,8,9,14,19,20,24], hint:{from:0,to:5},
-  },
-  {
-    title:'Crescent Lock', label:'Crescent Lock',
-    goal:'Trap in 2', moveLimit:2, maxCaptures:2, exactMoves:false, difficulty:6,
-    tigers:[24], goats:[12,14,18,19,23,17], hint:{from:17,to:22},
-  },
-  {
-    title:'Night Trap', label:'Night Trap',
-    goal:'Trap in 2', moveLimit:2, maxCaptures:2, exactMoves:false, difficulty:6,
-    tigers:[0], goats:[1,2,5,10,12,7], hint:{from:7,to:6},
-  },
-  {
-    title:'Slow Siege', label:'Slow Siege',
-    goal:'Trap in 2', moveLimit:2, maxCaptures:2, exactMoves:false, difficulty:7,
-    tigers:[19], goats:[9,12,13,14,17,22,23,24], hint:{from:13,to:18},
-  },
-  {
-    title:'Final Seal', label:'Final Seal',
-    goal:'Trap in 3', moveLimit:3, maxCaptures:2, exactMoves:false, difficulty:7,
-    tigers:[4], goats:[1,2,3,8,13,14,19], hint:{from:14,to:9},
-  },
-  {
-    title:'Grand Trap', label:'Grand Trap',
-    goal:'Trap in 4', moveLimit:4, maxCaptures:3, exactMoves:false, difficulty:8,
-    tigers:[4], goats:[1,2,3,8,13,14,19], hint:{from:8,to:9},
+    goal:'Trap in 2', moveLimit:2, maxCaptures:1, exactMoves:false, difficulty:6,
+    tigers:[20], goats:[5,7,10,11,13,14,16,17,21,23], hint:{from:23,to:22},
   },
 ];
 
 const TIGER_CORE_LEVELS = [
+  // d:1
   {
     title:'First Hunt',
     label:'Tutorial · First Hunt',
@@ -192,6 +163,7 @@ const TIGER_CORE_LEVELS = [
     tutorialKey:'tiger_intro',
     tutorialGuide:{from:15,to:5},
   },
+  // d:2
   {
     title:'Break the Line',
     label:'Break the Line',
@@ -218,6 +190,7 @@ const TIGER_CORE_LEVELS = [
     goats:[1,4,7,21,23,24],
     hint:{from:22,to:20},
   },
+  // d:3
   {
     title:'Three Cuts',
     label:'Three Cuts',
@@ -244,6 +217,7 @@ const TIGER_CORE_LEVELS = [
     goats:[1,2,8,11,16,17,21],
     hint:{from:24,to:18},
   },
+  // d:4
   {
     title:'Shadow Run',
     label:'Shadow Run',
@@ -271,6 +245,27 @@ const TIGER_CORE_LEVELS = [
     hint:{from:4,to:3},
   },
   {
+    title:'Sweep',
+    label:'Sweep',
+    goal:'Capture 3 goats',
+    moveLimit:4,
+    objective:'capture_n',
+    target:3,
+    exactMoves:false,
+    difficulty:4,
+    tigers:[0],
+    goats:[1,5,6,11,16,21],
+    hint:{from:0,to:12},
+  },
+  {
+    title:'Diagonal Blitz', label:'Diagonal Blitz',
+    goal:'Capture 3 goats',
+    moveLimit:4, objective:'capture_n', target:3,
+    exactMoves:false, difficulty:4,
+    tigers:[0], goats:[1,3,5,7], hint:{from:0,to:2},
+  },
+  // d:5
+  {
     title:'Four Fangs',
     label:'Four Fangs',
     goal:'Capture 4 goats',
@@ -297,56 +292,6 @@ const TIGER_CORE_LEVELS = [
     hint:{from:20,to:21},
   },
   {
-    title:'Great Escape',
-    label:'Great Escape',
-    goal:'Escape south',
-    moveLimit:7,
-    objective:'escape',
-    exactMoves:true,
-    difficulty:6,
-    escapeNodes:[20,21,22,23,24],
-    tigers:[2],
-    goats:[1,3,6,7,8,11,13],
-    hint:{from:2,to:0},
-  },
-  // -- Wave 2 — harder, more goats, deeper solutions --
-  {
-    title:'Chain Hunter',
-    label:'Chain Hunter',
-    goal:'Capture 5 goats',
-    moveLimit:8,
-    objective:'capture_n',
-    target:5,
-    exactMoves:false,
-    difficulty:7,
-    tigers:[12],
-    goats:[1,3,5,9,15,19,21,23,0,24],
-    hint:{from:12,to:6},
-    // Tiger at center, goats in a ring. Must chain multiple captures.
-  },
-  {
-    title:'Sweep',
-    label:'Sweep',
-    goal:'Capture 3 goats',
-    moveLimit:4,
-    objective:'capture_n',
-    target:3,
-    exactMoves:false,
-    difficulty:4,
-    tigers:[0],
-    goats:[1,5,6,11,16,21],
-    hint:{from:0,to:12},
-    // Tiger at corner. Goats form a diagonal line.
-    // 0 can jump 1→2 if 2 empty, or 5→10 if 10 empty, or 6→12 if 12 empty (diag).
-  },
-  {
-    title:'Diagonal Blitz', label:'Diagonal Blitz',
-    goal:'Capture 3 goats',
-    moveLimit:4, objective:'capture_n', target:3,
-    exactMoves:false, difficulty:4,
-    tigers:[0], goats:[1,3,5,7], hint:{from:0,to:2},
-  },
-  {
     title:'Tunnel Run',
     label:'Tunnel Run',
     goal:'Escape north',
@@ -358,7 +303,6 @@ const TIGER_CORE_LEVELS = [
     tigers:[22],
     goats:[7,8,9,11,12,13,16,17,18],
     hint:{from:22,to:21},
-    // Tiger at bottom, must navigate through dense goat line to reach top row.
   },
   {
     title:'East Corridor',
@@ -374,11 +318,28 @@ const TIGER_CORE_LEVELS = [
     hint:{from:0,to:5},
   },
   {
-    title:'Five Fangs', label:'Five Fangs',
-    goal:'Capture 5 goats',
-    moveLimit:8, objective:'capture_n', target:5,
-    exactMoves:false, difficulty:7,
-    tigers:[0], goats:[1,3,5,6,11,15,16,21], hint:{from:0,to:2},
+    title:'Western Run',
+    label:'Western Run',
+    goal:'Escape west edge',
+    moveLimit:6, objective:'escape',
+    escapeNodes:[0,5,10,15,20],
+    exactMoves:false, difficulty:5,
+    tigers:[24], goats:[8,9,12,13,17,18,19,23],
+    hint:{from:24,to:14},
+  },
+  // d:6
+  {
+    title:'Great Escape',
+    label:'Great Escape',
+    goal:'Escape south',
+    moveLimit:7,
+    objective:'escape',
+    exactMoves:true,
+    difficulty:6,
+    escapeNodes:[20,21,22,23,24],
+    tigers:[2],
+    goats:[0,1,3,6,7,8,9,11,12,13,14],
+    hint:{from:2,to:4},
   },
   {
     title:'Corner to Corner',
@@ -391,9 +352,46 @@ const TIGER_CORE_LEVELS = [
     difficulty:6,
     tigers:[4],
     goats:[3,6,7,8,9,11,12,13,14,15,16,17],
-    hint:{from:4,to:9},
-    // Dense blockade. Tiger must find the gap.
+    hint:{from:4,to:2},
   },
+  {
+    title:'Triple Strike',
+    label:'Triple Strike',
+    goal:'Capture 3 goats',
+    moveLimit:4, objective:'capture_n', target:3,
+    exactMoves:false, difficulty:6,
+    tigers:[24], goats:[18,22,23,13,17],
+    hint:{from:24,to:12},
+  },
+  // d:7
+  {
+    title:'Chain Hunter',
+    label:'Chain Hunter',
+    goal:'Capture 5 goats',
+    moveLimit:8,
+    objective:'capture_n',
+    target:5,
+    exactMoves:false,
+    difficulty:7,
+    tigers:[12],
+    goats:[1,3,5,9,15,19,21,23,0,24],
+    hint:{from:12,to:6},
+  },
+  {
+    title:'Five Fangs', label:'Five Fangs',
+    goal:'Capture 5 goats',
+    moveLimit:8, objective:'capture_n', target:5,
+    exactMoves:false, difficulty:7,
+    tigers:[0], goats:[1,3,5,6,11,15,16,21], hint:{from:0,to:2},
+  },
+  {
+    title:'Diagonal Chase', label:'Diagonal Chase',
+    goal:'Capture 4 goats',
+    moveLimit:7, objective:'capture_n', target:4,
+    exactMoves:false, difficulty:7,
+    tigers:[0], goats:[1,3,6,7,11,12,16,21], hint:{from:0,to:2},
+  },
+  // d:8
   {
     title:'Grand Hunt',
     label:'Grand Hunt',
@@ -405,64 +403,7 @@ const TIGER_CORE_LEVELS = [
     difficulty:8,
     tigers:[12],
     goats:[0,2,4,6,8,10,14,16,18,20,22,24],
-    hint:{from:12,to:6},
-    // Tiger at center, goats at all even-indexed nodes forming a checkerboard.
-    // Many jump opportunities — must chain them.
-  },
-  {
-    title:'The Last Hunt',
-    label:'The Last Hunt',
-    goal:'Capture 7 goats',
-    moveLimit:12, objective:'capture_n', target:7,
-    exactMoves:false, difficulty:9,
-    tigers:[0], goats:[1,2,3,4,5,6,7,8,9,10],
-    hint:{from:0,to:6},
-  },
-  // -- Core levels 21-25 --------------------------------------
-  {
-    title:'Quick Strike',
-    label:'Quick Strike',
-    goal:'Capture 2 goats',
-    moveLimit:2, objective:'capture_n', target:2,
-    exactMoves:false, difficulty:3,
-    tigers:[0], goats:[1,5,6,11,16,21],
-    hint:{from:0,to:12},
-    // Node0:{1,5,6}. All are goats → can jump.
-    // Jump 6→12 (diag,dir(+1+1),land12 empty ✓, capture 6).
-    // From 12:{6,7,11,13,17,18}. Goat at 11. Jump 11→10 (dir left, land10 empty ✓). 2 captures in 2 moves.
-  },
-  {
-    title:'Western Run',
-    label:'Western Run',
-    goal:'Escape west edge',
-    moveLimit:6, objective:'escape',
-    escapeNodes:[0,5,10,15,20],
-    exactMoves:false, difficulty:5,
-    tigers:[24], goats:[8,9,12,13,17,18,19,23],
-    hint:{from:24,to:19},
-    // Tiger at bottom-right must reach left column through a dense center.
-  },
-  {
-    title:'Triple Strike',
-    label:'Triple Strike',
-    goal:'Capture 3 goats',
-    moveLimit:4, objective:'capture_n', target:3,
-    exactMoves:false, difficulty:6,
-    tigers:[24], goats:[18,22,23,13,17],
-    hint:{from:24,to:18},
-    // Node24:{18,19,23}. Goat at 23. Jump 23→22? dir(0,-1), land22. Goat at 22 captured(skip: jump OVER 23). 
-    // Actually: jump over goat at 23: dir from 24 to 23 is (0,-1)→land 22. Goat at 22? If 22 is empty, valid.
-    // goats:[18,22,23] - jump 23→22(goat at 22): land must be empty. Not valid.
-    // goats:[18,23]: jump 23→22 (land 22 empty ✓, capture 23). From 22:{16,17,21,23}. Goat at 18? Not adj to 22.
-    // Hmm - let me use: tigers:[12], goats:[7,11,17] which allows chains.
-    // But easiest: just trust the solver with the placement.
-  },
-  {
-    title:'Diagonal Chase', label:'Diagonal Chase',
-    goal:'Capture 4 goats',
-    moveLimit:7, objective:'capture_n', target:4,
-    exactMoves:false, difficulty:7,
-    tigers:[0], goats:[1,3,6,7,11,12,16,21], hint:{from:0,to:2},
+    hint:{from:12,to:7},
   },
   {
     title:'The Gauntlet',
@@ -473,6 +414,16 @@ const TIGER_CORE_LEVELS = [
     exactMoves:false, difficulty:8,
     tigers:[2], goats:[1,3,6,7,8,11,12,13,16,17,18],
     hint:{from:2,to:0},
+  },
+  // d:9
+  {
+    title:'The Last Hunt',
+    label:'The Last Hunt',
+    goal:'Capture 7 goats',
+    moveLimit:12, objective:'capture_n', target:7,
+    exactMoves:false, difficulty:9,
+    tigers:[0], goats:[1,2,3,4,5,6,7,8,9,10],
+    hint:{from:0,to:12},
   },
   {
     title:'King of the Board',
