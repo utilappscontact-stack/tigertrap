@@ -733,6 +733,13 @@ function transformLevel(base, variant, labelPrefix='Variant') {
     goats: base.goats.map(n=>transformNode(n, variant)),
     escapeNodes: (base.escapeNodes || []).map(n=>transformNode(n, variant)),
   };
+  if (variant === 2 && base.objective === 'escape' && transformed.goal) {
+    const oppDir = { north:'south', south:'north', east:'west', west:'east' };
+    transformed.goal = transformed.goal.replace(/\b(north|south|east|west)\b/gi, (m) => {
+      const opp = oppDir[m.toLowerCase()];
+      return m[0] === m[0].toUpperCase() ? opp[0].toUpperCase() + opp.slice(1) : opp;
+    });
+  }
   if (base.hint) {
     transformed.hint = {
       from: transformNode(base.hint.from, variant),
