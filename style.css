@@ -681,10 +681,11 @@ body.preload * { transition:none !important; animation:none !important; }
 #streak-bar .streak-inner {
   display:flex; align-items:center; gap:10px; width:100%;
 }
-#streak-bar .streak-label-group { flex:1; }
+#streak-bar .streak-label-group { flex:1; display:flex; flex-direction:column; gap:2px; }
+.streak-header { font-size:8px; letter-spacing:2.5px; text-transform:uppercase; color:#E8A030; display:block; margin-bottom:1px; }
 #streak-label-main { font-size:11px; letter-spacing:.5px; color:#C88A2C; display:block; }
-#streak-label-sub  { font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:#6A4820; display:block; margin-top:1px; }
-#streak-count { font-size:22px; color:#FFD060; letter-spacing:-0.5px; font-weight:normal; line-height:1; flex-shrink:0; }
+#streak-label-sub  { font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:#6A4820; display:block; }
+#streak-count { font-size:24px; color:#FFD060; letter-spacing:-0.5px; font-weight:normal; line-height:1; flex-shrink:0; text-shadow:0 0 12px rgba(255,208,80,.30); }
 
 /* ─── TOP BAR GAME CONTROLS ─── */
 .top-btn-icon {
@@ -1030,24 +1031,39 @@ html, body {
 
 /* ── Tiger card — warm leather photo ───────────────────── */
 .tiger-card {
-  background-image: url("assets/bg/tiger-card-panel.jpg");
-  background-size: 100% 100%;
-  border: 1px solid rgba(200,130,40,.55);
+  background-image:
+    linear-gradient(180deg, rgba(0,0,0,0) 30%, rgba(0,0,0,.52) 72%, rgba(0,0,0,.74) 100%),
+    url("assets/bg/tiger-card-panel.jpg");
+  background-size: 100% 100%, cover;
+  background-position: 0 0, center top;
+  background-repeat: no-repeat;
+  border-top:    1px solid rgba(255,195,90,.40);
+  border-left:   1px solid rgba(200,130,40,.44);
+  border-right:  1px solid rgba(60,30,8,.62);
+  border-bottom: 2px solid rgba(0,0,0,.84);
   box-shadow:
-    0 0 28px rgba(200,100,20,.14),
-    inset 0  1px 0 rgba(255,215,120,.14),
-    inset 0 -1px 0 rgba(0,0,0,.65),
-    inset 0  0  32px rgba(0,0,0,.42);
-  border-radius: 14px;
+    0 12px 36px rgba(0,0,0,.70),
+    0  4px 12px rgba(0,0,0,.46),
+    inset 0  2px 0 rgba(255,210,100,.22),
+    inset 0 -2px 0 rgba(0,0,0,.80),
+    inset  2px 0 0 rgba(255,205,90,.14),
+    inset -2px 0 0 rgba(0,0,0,.40),
+    inset 0 0 48px rgba(0,0,0,.30);
+  border-radius: 16px;
 }
 .tiger-card:hover, .tiger-card:focus-visible {
   box-shadow:
-    0 16px 44px rgba(200,100,20,.24),
-    0  0  30px rgba(232,135,26,.18),
-    inset 0  1px 0 rgba(255,220,140,.20),
-    inset 0 -1px 0 rgba(0,0,0,.65),
-    inset 0  0  30px rgba(0,0,0,.38);
-  border-color: rgba(232,155,50,.78);
+    0 18px 50px rgba(200,100,20,.30),
+    0  6px 16px rgba(0,0,0,.52),
+    inset 0  2px 0 rgba(255,220,120,.30),
+    inset 0 -2px 0 rgba(0,0,0,.80),
+    inset  2px 0 0 rgba(255,210,100,.20),
+    inset -2px 0 0 rgba(0,0,0,.40),
+    inset 0 0 40px rgba(0,0,0,.22);
+  border-top-color:   rgba(255,210,100,.56);
+  border-left-color:  rgba(232,155,50,.60);
+  border-right-color: rgba(60,30,8,.62);
+  border-bottom-color: rgba(0,0,0,.84);
 }
 
 /* Text legibility over the photo */
@@ -1057,24 +1073,39 @@ html, body {
 
 /* ── Goat card — cool dark slate photo ───────────────────── */
 .goat-card {
-  background-image: url("assets/bg/goat-card-panel.jpg");
-  background-size: 100% 100%;
-  border: 1px solid rgba(180,168,150,.30);
+  background-image:
+    linear-gradient(180deg, rgba(0,0,0,0) 30%, rgba(0,0,0,.56) 74%, rgba(0,0,0,.78) 100%),
+    url("assets/bg/goat-card-panel.jpg");
+  background-size: 100% 100%, cover;
+  background-position: 0 0, center top;
+  background-repeat: no-repeat;
+  border-top:    1px solid rgba(210,200,182,.34);
+  border-left:   1px solid rgba(160,148,140,.28);
+  border-right:  1px solid rgba(30,20,14,.66);
+  border-bottom: 2px solid rgba(0,0,0,.88);
   box-shadow:
-    0 0 24px rgba(0,0,0,.28),
-    inset 0  1px 0 rgba(220,210,195,.12),
-    inset 0 -1px 0 rgba(0,0,0,.68),
-    inset 0  0  30px rgba(0,0,0,.52);
-  border-radius: 14px;
+    0 12px 36px rgba(0,0,0,.74),
+    0  4px 12px rgba(0,0,0,.50),
+    inset 0  2px 0 rgba(220,210,190,.20),
+    inset 0 -2px 0 rgba(0,0,0,.84),
+    inset  2px 0 0 rgba(215,205,185,.12),
+    inset -2px 0 0 rgba(0,0,0,.42),
+    inset 0 0 48px rgba(0,0,0,.36);
+  border-radius: 16px;
 }
 .goat-card:hover, .goat-card:focus-visible {
   box-shadow:
-    0 16px 42px rgba(0,0,0,.38),
-    0  0  26px rgba(180,168,150,.10),
-    inset 0  1px 0 rgba(220,210,195,.18),
-    inset 0 -1px 0 rgba(0,0,0,.68),
-    inset 0  0  28px rgba(0,0,0,.48);
-  border-color: rgba(210,200,180,.44);
+    0 18px 50px rgba(0,0,0,.46),
+    0  6px 16px rgba(0,0,0,.54),
+    inset 0  2px 0 rgba(220,212,196,.26),
+    inset 0 -2px 0 rgba(0,0,0,.84),
+    inset  2px 0 0 rgba(215,205,185,.18),
+    inset -2px 0 0 rgba(0,0,0,.42),
+    inset 0 0 40px rgba(0,0,0,.28);
+  border-top-color:   rgba(212,202,186,.46);
+  border-left-color:  rgba(178,168,152,.40);
+  border-right-color: rgba(30,20,14,.66);
+  border-bottom-color: rgba(0,0,0,.88);
 }
 
 /* Text legibility over the photo */
@@ -1082,43 +1113,58 @@ html, body {
 .goat-card .mode-card-desc    { color: #5A4A38; text-shadow: 0 1px 3px rgba(0,0,0,.8); }
 .goat-card .mode-card-fantasy { color: #807060; text-shadow: 0 1px 3px rgba(0,0,0,.8); }
 
-/* Card needs extra top padding now that icon is removed —
-   so the title doesn't sit too high in the card */
+/* Push text below the medallion baked into the panel photos */
 .tiger-card,
 .goat-card {
-  padding-top: 32px;
+  padding-top: 100px;
+  min-height: 240px;
 }
 
-/* ── PLAY TIGER / PLAY GOAT buttons ──────────────────────── */
+/* ── PLAY TIGER / PLAY GOAT buttons — carved stone slab ── */
 .mode-card-cta {
-  border-radius: 6px !important;
+  border-radius: 8px !important;
   letter-spacing: 2.5px;
+  font-size: 10px;
+  text-transform: uppercase;
+  padding: 8px 16px;
 }
 .tiger-card .mode-card-cta {
-  background: linear-gradient(175deg, #2E1A08 0%, #1E1006 100%);
-  border: 1px solid rgba(200,120,40,.50);
-  border-bottom: 2px solid rgba(100,50,10,.55);
-  color: #D49040;
-  text-shadow: 0 1px 2px rgba(0,0,0,.8);
-  box-shadow: inset 0 1px 0 rgba(255,200,100,.10), 0 2px 8px rgba(0,0,0,.45);
+  background: linear-gradient(175deg, #2A1608 0%, #1A0E06 100%);
+  border-top:    1px solid rgba(255,200,90,.30);
+  border-left:   1px solid rgba(200,120,40,.42);
+  border-right:  1px solid rgba(60,28,8,.58);
+  border-bottom: 2px solid rgba(0,0,0,.78);
+  color: #D4A050;
+  text-shadow: 0 1px 3px rgba(0,0,0,.88);
+  box-shadow:
+    inset 0  1px 0 rgba(255,200,90,.18),
+    inset 0 -1px 0 rgba(0,0,0,.62),
+    0 3px 10px rgba(0,0,0,.50);
 }
 .tiger-card:hover .mode-card-cta,
 .tiger-card:focus-visible .mode-card-cta {
-  border-color: rgba(232,155,60,.68);
-  color: #EAA848;
+  border-top-color: rgba(255,210,100,.42);
+  border-left-color: rgba(232,155,60,.56);
+  color: #EAB060;
 }
 .goat-card .mode-card-cta {
-  background: linear-gradient(175deg, #201C18 0%, #161310 100%);
-  border: 1px solid rgba(160,148,132,.32);
-  border-bottom: 2px solid rgba(0,0,0,.55);
-  color: #786858;
-  text-shadow: 0 1px 2px rgba(0,0,0,.8);
-  box-shadow: inset 0 1px 0 rgba(200,190,175,.08), 0 2px 6px rgba(0,0,0,.45);
+  background: linear-gradient(175deg, #1E1A16 0%, #141210 100%);
+  border-top:    1px solid rgba(210,200,182,.22);
+  border-left:   1px solid rgba(155,143,128,.28);
+  border-right:  1px solid rgba(0,0,0,.58);
+  border-bottom: 2px solid rgba(0,0,0,.80);
+  color: #A09070;
+  text-shadow: 0 1px 3px rgba(0,0,0,.88);
+  box-shadow:
+    inset 0  1px 0 rgba(210,200,182,.14),
+    inset 0 -1px 0 rgba(0,0,0,.64),
+    0 3px 10px rgba(0,0,0,.52);
 }
 .goat-card:hover .mode-card-cta,
 .goat-card:focus-visible .mode-card-cta {
-  border-color: rgba(200,188,170,.48);
-  color: #A09070;
+  border-top-color: rgba(215,205,185,.34);
+  border-left-color: rgba(178,168,152,.42);
+  color: #C0B090;
 }
 
 /* ── Campaign / Daily / Endless tabs ───────────────────── */
@@ -1149,10 +1195,12 @@ html, body {
 .start-run-btn.active::after {
   content: '';
   position: absolute;
-  bottom: -3px; left: 50%; transform: translateX(-50%);
-  width: 6px; height: 6px;
-  background: #E8871A; border-radius: 50%;
-  box-shadow: 0 0 8px rgba(232,135,26,.7);
+  bottom: 5px; left: 18%;
+  width: 64%; height: 2px;
+  border-radius: 1px;
+  background: linear-gradient(90deg, transparent, #E8A030 25%, #E8A030 75%, transparent);
+  box-shadow: 0 0 7px rgba(232,160,48,.55);
+  transform: none;
 }
 .start-run-btn:hover:not(.active) {
   color: #A07838;
@@ -1160,14 +1208,18 @@ html, body {
   background: rgba(232,135,26,.05);
 }
 
-/* ── Streak bar ───────────────────────────────────────────────────────── */
+/* ── Streak bar — carved stone panel ───────────────────────────────── */
 #streak-bar {
-  background: linear-gradient(180deg, #1C1208 0%, #140E07 100%);
-  border: 1px solid rgba(200,130,40,.40);
+  background: linear-gradient(180deg, #1E1409 0%, #130E07 100%);
+  border-top:    1px solid rgba(255,195,80,.18);
+  border-left:   1px solid rgba(200,130,40,.30);
+  border-right:  1px solid rgba(35,18,6,.70);
+  border-bottom: 2px solid rgba(0,0,0,.82);
   box-shadow:
-    inset 0  1px 0 rgba(255,210,120,.06),
-    inset 0 -1px 0 rgba(0,0,0,.45),
-    0 4px 16px rgba(0,0,0,.32);
+    0 6px 22px rgba(0,0,0,.52),
+    inset 0  2px 0 rgba(255,210,100,.08),
+    inset 0 -1px 0 rgba(0,0,0,.58),
+    inset 0  0  32px rgba(0,0,0,.28);
 }
 
 /* ── Context card on start screen ──────────────────────────── */
@@ -1699,4 +1751,117 @@ html, body {
 /* Wide viewport: keep home content column centred */
 @media (min-width: 600px) {
   .mode-cards, .start-run-row, #streak-bar { max-width: 380px !important; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TASK A3 — HOME PAGE BACKGROUND, CONTRAST & LAYOUT FIXES
+   ═══════════════════════════════════════════════════════════════ */
+
+/* 1. Background: single stone-bg.jpg at cover — eliminates tile seam */
+#start-screen {
+  background-color: #080603 !important;
+  background-image: url("assets/bg/stone-bg.jpg") !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-position: center top !important;
+  background-attachment: scroll !important;
+}
+
+/* Ease the dark overlay so the stone photo is actually visible */
+#start-screen::after {
+  background: rgba(6, 4, 2, 0.50) !important;
+}
+
+/* 2. Cards: padding already set in Stone Skin section above (100px / min-height 240px) */
+
+/* 3. Suppress broken ::before that had no content (never rendered, clean up) */
+.tiger-card::before,
+.goat-card::before {
+  content: none !important;
+  display: none !important;
+}
+
+/* 4. Card titles — high-contrast over gradient scrim */
+.tiger-card .mode-card-title {
+  color: #EDE0C4 !important;
+  text-shadow: 0 1px 8px rgba(0,0,0,.95) !important;
+}
+.goat-card .mode-card-title {
+  color: #EDE0C4 !important;
+  text-shadow: 0 1px 8px rgba(0,0,0,.95) !important;
+}
+
+/* 5. Card body copy — warm but readable */
+.tiger-card .mode-card-fantasy,
+.tiger-card .mode-card-desc {
+  color: #D4A860 !important;
+  text-shadow: 0 1px 4px rgba(0,0,0,.90) !important;
+}
+.goat-card .mode-card-fantasy,
+.goat-card .mode-card-desc {
+  color: #C0B4A0 !important;
+  text-shadow: 0 1px 4px rgba(0,0,0,.90) !important;
+}
+
+/* 6. CAMPAIGN / DAILY / ENDLESS tabs — equal flex, taller touch target */
+.start-run-btn {
+  flex: 1 1 0 !important;
+  min-height: 48px !important;
+  padding: 14px 6px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* 7. Daily Streak row — brighter labels */
+#streak-bar {
+  padding: 14px 18px !important;
+}
+.streak-header {
+  color: #E8A030 !important;
+  letter-spacing: 2.5px !important;
+  font-size: 8px !important;
+}
+#streak-label-main {
+  color: #ECC060 !important;
+  font-size: 11px !important;
+  letter-spacing: 0.5px !important;
+}
+#streak-label-sub {
+  color: #AA8030 !important;
+  font-size: 9px !important;
+  letter-spacing: 1.5px !important;
+}
+#streak-count {
+  color: #FFD060 !important;
+  font-size: 24px !important;
+  text-shadow: 0 0 14px rgba(255,208,80,.32) !important;
+}
+
+/* 8. Stone-family styling for any PLAY DAILY button game.js may insert */
+.play-daily-btn,
+#btn-play-daily {
+  background: linear-gradient(175deg, #2E1E0A 0%, #1E1408 100%);
+  border: 1px solid rgba(232,135,26,.45);
+  border-bottom: 2px solid rgba(100,50,10,.55);
+  border-radius: 8px;
+  color: #E8A840;
+  font-family: inherit;
+  font-size: 10px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  padding: 10px 20px;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255,210,100,.09), 0 3px 10px rgba(0,0,0,.4);
+  text-shadow: 0 1px 2px rgba(0,0,0,.7);
+}
+.play-daily-btn:hover,
+#btn-play-daily:hover {
+  border-color: rgba(232,155,50,.68);
+  color: #FFD060;
+}
+
+/* A3 contrast — override inline color on #launch-counts footer text */
+#launch-counts {
+  color: #BCA060 !important;
 }
