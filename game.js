@@ -624,7 +624,9 @@ function openLevelSelect(mode) {
   const grid = document.getElementById('level-grid');
   const levels = getModeLevels(mode);
   const unlocked = getUnlockedCount(mode);
-  if (title) title.textContent = mode === 'goat' ? '🐐 Goat Campaign' : '🐯 Tiger Campaign';
+  if (title) title.innerHTML = mode === 'goat'
+    ? '<img src="assets/pieces/goat-piece.png" alt="" style="width:18px;height:18px;vertical-align:middle;object-fit:contain;margin-right:6px;"> Goat Campaign'
+    : '<img src="assets/pieces/tiger-piece.png" alt="" style="width:18px;height:18px;vertical-align:middle;object-fit:contain;margin-right:6px;"> Tiger Campaign';
   if (grid) {
     grid.innerHTML = levels.map((lvl, i) => {
       const locked = i >= unlocked;
@@ -633,7 +635,7 @@ function openLevelSelect(mode) {
       // For tiger levels, show objective type
       let typeLabel = '';
       if (mode === 'tiger' && lvl.objective) {
-        typeLabel = lvl.objective === 'escape' ? '🚪 Escape' : '🐐 Capture';
+        typeLabel = lvl.objective === 'escape' ? '🚪 Escape' : '<img src="assets/pieces/goat-piece.png" alt="" style="width:13px;height:13px;vertical-align:middle;object-fit:contain;margin-right:3px;"> Capture';
       }
       const goalShort = lvl.goal || '';
       // Par star
@@ -1121,11 +1123,20 @@ function _drawTutFrame(canvas, board, gp, glideT, flashNode) {
 }
 
 function _drawTutGoatAt(cx,x,y,cel) {
-  const r=cel*.2;
-  cx.beginPath(); cx.arc(x+.8,y+2,r,0,Math.PI*2); cx.fillStyle='rgba(0,0,0,.32)'; cx.fill();
-  cx.beginPath(); cx.arc(x,y,r,0,Math.PI*2); cx.fillStyle='#EDE0C4'; cx.fill();
-  cx.strokeStyle='#A08050'; cx.lineWidth=1.4; cx.stroke();
-  cx.beginPath(); cx.arc(x,y,r*.28,0,Math.PI*2); cx.fillStyle='rgba(80,50,15,.25)'; cx.fill();
+  const r = cel * 0.2;
+  if (window._goatPieceImg && window._goatPieceImg.complete && window._goatPieceImg.naturalWidth > 0) {
+    cx.save();
+    cx.shadowColor = 'rgba(0,0,0,0.50)';
+    cx.shadowBlur = 6;
+    cx.shadowOffsetY = 2;
+    cx.drawImage(window._goatPieceImg, x - r, y - r, r * 2, r * 2);
+    cx.restore();
+  } else {
+    cx.beginPath(); cx.arc(x+.8,y+2,r,0,Math.PI*2); cx.fillStyle='rgba(0,0,0,.32)'; cx.fill();
+    cx.beginPath(); cx.arc(x,y,r,0,Math.PI*2); cx.fillStyle='#EDE0C4'; cx.fill();
+    cx.strokeStyle='#A08050'; cx.lineWidth=1.4; cx.stroke();
+    cx.beginPath(); cx.arc(x,y,r*.28,0,Math.PI*2); cx.fillStyle='rgba(80,50,15,.25)'; cx.fill();
+  }
 }
 
 function _drawTutTiger(cx, p, cel, isTigerPlayer, trapped) {
@@ -1133,17 +1144,30 @@ function _drawTutTiger(cx, p, cel, isTigerPlayer, trapped) {
 }
 
 function _drawTutTigerXY(cx, px, py, cel, isTigerPlayer, trapped) {
-  const rad=cel*.25;
-  const grd=cx.createRadialGradient(px,py,0,px,py,rad*2.7);
-  grd.addColorStop(0,`rgba(232,135,26,${isTigerPlayer?.35:.22})`); grd.addColorStop(1,'rgba(232,135,26,0)');
-  cx.fillStyle=grd; cx.beginPath(); cx.arc(px,py,rad*2.7,0,Math.PI*2); cx.fill();
+  const rad = cel * 0.25;
+  // Ambient glow
+  const grd = cx.createRadialGradient(px,py,0,px,py,rad*2.7);
+  grd.addColorStop(0, `rgba(232,135,26,${isTigerPlayer ? .35 : .22})`);
+  grd.addColorStop(1, 'rgba(232,135,26,0)');
+  cx.fillStyle = grd; cx.beginPath(); cx.arc(px,py,rad*2.7,0,Math.PI*2); cx.fill();
+  // Selection ring
   if (isTigerPlayer) {
-    cx.beginPath(); cx.moveTo(px,py-(rad+3)); cx.lineTo(px+(rad+3)*.866,py+(rad+3)*.5); cx.lineTo(px-(rad+3)*.866,py+(rad+3)*.5); cx.closePath();
+    cx.beginPath();
+    cx.moveTo(px, py-(rad+3)); cx.lineTo(px+(rad+3)*.866, py+(rad+3)*.5); cx.lineTo(px-(rad+3)*.866, py+(rad+3)*.5); cx.closePath();
     cx.strokeStyle='rgba(255,210,60,.55)'; cx.lineWidth=1.8; cx.stroke();
   }
-  cx.save(); cx.translate(px+1.4,py+2.4); cx.beginPath(); cx.moveTo(0,-rad); cx.lineTo(rad*.866,rad*.5); cx.lineTo(-rad*.866,rad*.5); cx.closePath(); cx.fillStyle='rgba(0,0,0,.34)'; cx.fill(); cx.restore();
-  cx.save(); cx.translate(px,py); cx.beginPath(); cx.moveTo(0,-rad); cx.lineTo(rad*.866,rad*.5); cx.lineTo(-rad*.866,rad*.5); cx.closePath(); cx.fillStyle='#E8871A'; cx.fill(); cx.strokeStyle='#F06010'; cx.lineWidth=1.4; cx.stroke(); cx.restore();
-  cx.save(); cx.translate(px,py-rad*.12); cx.beginPath(); cx.moveTo(0,-rad*.37); cx.lineTo(rad*.37*.866,rad*.37*.5); cx.lineTo(-rad*.37*.866,rad*.37*.5); cx.closePath(); cx.fillStyle='rgba(255,200,90,.38)'; cx.fill(); cx.restore();
+  if (window._tigerPieceImg && window._tigerPieceImg.complete && window._tigerPieceImg.naturalWidth > 0) {
+    cx.save();
+    cx.shadowColor = 'rgba(0,0,0,0.55)';
+    cx.shadowBlur = 8;
+    cx.shadowOffsetY = 3;
+    cx.drawImage(window._tigerPieceImg, px - rad, py - rad * 1.05, rad * 2, rad * 2.1);
+    cx.restore();
+  } else {
+    cx.save(); cx.translate(px+1.4,py+2.4); cx.beginPath(); cx.moveTo(0,-rad); cx.lineTo(rad*.866,rad*.5); cx.lineTo(-rad*.866,rad*.5); cx.closePath(); cx.fillStyle='rgba(0,0,0,.34)'; cx.fill(); cx.restore();
+    cx.save(); cx.translate(px,py); cx.beginPath(); cx.moveTo(0,-rad); cx.lineTo(rad*.866,rad*.5); cx.lineTo(-rad*.866,rad*.5); cx.closePath(); cx.fillStyle='#E8871A'; cx.fill(); cx.strokeStyle='#F06010'; cx.lineWidth=1.4; cx.stroke(); cx.restore();
+    cx.save(); cx.translate(px,py-rad*.12); cx.beginPath(); cx.moveTo(0,-rad*.37); cx.lineTo(rad*.37*.866,rad*.37*.5); cx.lineTo(-rad*.37*.866,rad*.37*.5); cx.closePath(); cx.fillStyle='rgba(255,200,90,.38)'; cx.fill(); cx.restore();
+  }
   if (trapped) {
     cx.beginPath(); cx.arc(px,py,rad*2,0,Math.PI*2);
     cx.strokeStyle='rgba(80,210,80,.78)'; cx.lineWidth=2.5; cx.setLineDash([5,4]); cx.stroke(); cx.setLineDash([]);
@@ -1158,7 +1182,9 @@ function openTutorial(mode, fromGame=false) {
   _tutSteps = getTutStepsAnimated(_tutMode);
 
   const kicker = document.getElementById('tut-mode-kicker');
-  if (kicker) kicker.textContent = _tutMode==='tiger' ? '🐯 Tiger Mode' : '🐐 Goat Mode';
+  if (kicker) kicker.innerHTML = _tutMode==='tiger'
+    ? '<img src="assets/pieces/tiger-piece.png" alt="" style="width:16px;height:16px;vertical-align:middle;object-fit:contain;margin-right:5px;"> Tiger Mode'
+    : '<img src="assets/pieces/goat-piece.png" alt="" style="width:16px;height:16px;vertical-align:middle;object-fit:contain;margin-right:5px;"> Goat Mode';
 
   // Size canvas to available space
   const bodyArea = document.getElementById('tut-body-area');
@@ -1447,7 +1473,9 @@ function loadLevel(idx) {
   updateHUD();
 
   const tag = document.getElementById('mode-tag');
-  tag.textContent = curMode==='tiger' ? '🐯 Tiger Mode' : '🐐 Goat Mode';
+  tag.innerHTML = curMode==='tiger'
+    ? '<img src="assets/pieces/tiger-piece.png" alt="" style="width:16px;height:16px;vertical-align:middle;object-fit:contain;margin-right:4px;"> Tiger Mode'
+    : '<img src="assets/pieces/goat-piece.png" alt="" style="width:16px;height:16px;vertical-align:middle;object-fit:contain;margin-right:4px;"> Goat Mode';
   tag.className   = curMode;
 
   if (curMode==='tiger') computeTigerMoves();
@@ -1886,7 +1914,7 @@ function execTigerJump(jmp) {
     S.phase='won'; triggerShake(14,500); haptic.trap();
     registerCampaignWin();
     const _captCount = S.capturedGoats;
-    const _doCapOverlay = () => showOverlay('🐯','Tiger!',`Captured ${_captCount} goat${_captCount>1?'s':''}!`,
+    const _doCapOverlay = () => showOverlay('<img src="assets/pieces/tiger-piece.png" alt="" style="width:52px;height:52px;object-fit:contain;">','Tiger!',`Captured ${_captCount} goat${_captCount>1?'s':''}!`,
       (curRun==='campaign' && lvlIdx<TIGER_LEVELS.length-1)?'Next →':'Play Again',
       () => {
         if (curRun==='campaign' && lvlIdx<TIGER_LEVELS.length-1) {
@@ -2577,7 +2605,9 @@ function showLevelIntro(nextIdx, callback) {
   const moEl = document.getElementById('li-mode');
   if (kiEl) kiEl.textContent = `Level ${nextIdx + 1}`;
   if (tiEl) tiEl.textContent = lvl.title || lvl.label || '';
-  if (moEl) moEl.textContent = curMode === 'tiger' ? '🐯 Tiger Mode' : '🐐 Goat Mode';
+  if (moEl) moEl.innerHTML = curMode === 'tiger'
+    ? '<img src="assets/pieces/tiger-piece.png" alt="" style="width:16px;height:16px;vertical-align:middle;object-fit:contain;margin-right:4px;"> Tiger Mode'
+    : '<img src="assets/pieces/goat-piece.png" alt="" style="width:16px;height:16px;vertical-align:middle;object-fit:contain;margin-right:4px;"> Goat Mode';
   if (doEl) {
     const diff = Math.min(8, Math.max(1, lvl.difficulty || 1));
     const dots = Math.round(1 + (diff - 1) * 4 / 7); // map 1-8 → 1-5
@@ -2777,7 +2807,7 @@ function _copyText(text, copiedEl) {
 
 function showOverlay(icon,title,sub,b1,cb1,b2,cb2, resultData, direction) {
   direction = direction || 'up';
-  document.getElementById('overlay-icon').textContent=icon;
+  document.getElementById('overlay-icon').innerHTML=icon;
   document.getElementById('overlay-title').textContent=title;
   document.getElementById('overlay-sub').textContent=sub;
   document.getElementById('overlay-btn').textContent=b1;
