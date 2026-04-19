@@ -370,9 +370,8 @@ const TIGER_CORE_LEVELS = [
     exactMoves:false,
     difficulty:5,
     tigers:[0],
-    goats:[1,2,3,5,6,7,8,10,11,12,13],
+    goats:[1,2,6,7,11,12],
     hint:{from:0,to:5},
-    // Tiger at top-left. Must reach right column.
   },
   {
     title:'Five Fangs', label:'Five Fangs',
