@@ -475,6 +475,7 @@ const ANALYTICS_KEY  = 'tiger_trap_analytics_v1';
 const DAILY_KEY      = 'tiger_trap_daily_v1';
 const DAILY_KEY_V2   = 'tiger_trap_daily_v2';
 const STREAK_KEY     = 'tiger_trap_streak_v1';
+const STREAK_KEY_V2  = 'tiger_trap_streak_v2';
 
 function migrateProgressV1toV2() {
   if (localStorage.getItem(STORAGE_KEY_V2)) return;
@@ -494,7 +495,7 @@ function migrateProgressV1toV2() {
 
 // -- Daily challenge helpers (declared early — used by resetAllProgress etc.) --
 function getTodayKey() {
-  const d = new Date();
+  const d = new Date(Date.now());
   return `${d.getUTCFullYear()}-${d.getUTCMonth()+1}-${d.getUTCDate()}`;
 }
 
@@ -804,6 +805,7 @@ function setRunType(type) {
     const el = document.getElementById(`run-${name}`);
     if (el) el.classList.toggle('active', name===curRun);
   });
+  renderRescueBanner();
 }
 
 
@@ -921,23 +923,132 @@ const haptic = {
 };
 
 // ==============================================================
-//  STREAK TRACKING
+//  STREAK TRACKING  (v2: count, lastDate, rescuesUsedThisWeek, weekStart)
 // ==============================================================
 
+const STREAK_MILESTONES = [7, 30, 100, 365];
+
+function _getMondayKey(d) {
+  // YYYY-M-D of the most recent Monday (UTC) for a given Date object
+  const diff = (d.getUTCDay() + 6) % 7;
+  const m = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - diff));
+  return `${m.getUTCFullYear()}-${m.getUTCMonth()+1}-${m.getUTCDate()}`;
+}
+
+function migrateStreakV1toV2() {
+  if (localStorage.getItem(STREAK_KEY_V2)) return;
+  const raw = localStorage.getItem(STREAK_KEY);
+  if (!raw) return;
+  try {
+    const v1 = JSON.parse(raw);
+    const v2 = {
+      count:               v1.count || 0,
+      lastDate:            v1.last  || null,
+      rescuesUsedThisWeek: 0,
+      weekStart:           _getMondayKey(new Date(Date.now())),
+    };
+    localStorage.setItem(STREAK_KEY_V2, JSON.stringify(v2));
+  } catch(e) {}
+}
+
 function getStreak() {
-  try { const r=localStorage.getItem(STREAK_KEY); return r ? JSON.parse(r) : {count:0,last:null}; }
-  catch(e) { return {count:0,last:null}; }
+  migrateStreakV1toV2();
+  try {
+    const r = localStorage.getItem(STREAK_KEY_V2);
+    if (!r) return { count: 0, lastDate: null, rescuesUsedThisWeek: 0, weekStart: null };
+    return JSON.parse(r);
+  } catch(e) {
+    return { count: 0, lastDate: null, rescuesUsedThisWeek: 0, weekStart: null };
+  }
+}
+
+function _saveStreak(s) {
+  try { localStorage.setItem(STREAK_KEY_V2, JSON.stringify(s)); } catch(e) {}
 }
 
 function updateStreak() {
-  const today = getTodayKey();
+  const now = new Date(Date.now());
+  const today = `${now.getUTCFullYear()}-${now.getUTCMonth()+1}-${now.getUTCDate()}`;
   const s = getStreak();
-  if (s.last === today) return s.count; // already counted today
-  const yest = new Date(); yest.setDate(yest.getDate()-1);
-  const yKey = `${yest.getUTCFullYear()}-${yest.getUTCMonth()+1}-${yest.getUTCDate()}`;
-  const count = (s.last === yKey) ? s.count + 1 : 1;
-  try { localStorage.setItem(STREAK_KEY, JSON.stringify({count, last:today})); } catch(e) {}
-  return count;
+
+  // Roll over rescue counter on new week
+  const curWeekStart = _getMondayKey(now);
+  if (s.weekStart !== curWeekStart) {
+    s.rescuesUsedThisWeek = 0;
+    s.weekStart = curWeekStart;
+  }
+
+  if (s.lastDate === today) return s.count;
+
+  const yest = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1));
+  const yesterdayKey = `${yest.getUTCFullYear()}-${yest.getUTCMonth()+1}-${yest.getUTCDate()}`;
+  const dby  = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 2));
+  const dayBeforeYestKey = `${dby.getUTCFullYear()}-${dby.getUTCMonth()+1}-${dby.getUTCDate()}`;
+
+  let newCount, usedRescue = false;
+  if (s.lastDate === yesterdayKey) {
+    newCount = s.count + 1;
+  } else if (s.lastDate === dayBeforeYestKey && s.rescuesUsedThisWeek < 1) {
+    newCount = s.count + 1;
+    usedRescue = true;
+  } else {
+    newCount = 1;
+  }
+
+  s.count = newCount;
+  s.lastDate = today;
+  if (usedRescue) s.rescuesUsedThisWeek = 1;
+  _saveStreak(s);
+
+  if (STREAK_MILESTONES.includes(newCount)) {
+    triggerMilestoneCelebration(newCount);
+  }
+  return newCount;
+}
+
+function isRescueEligible() {
+  const s = getStreak();
+  if (s.count === 0 || s.rescuesUsedThisWeek >= 1 || isDailyCompleteToday()) return false;
+  const now = new Date(Date.now());
+  const dby = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 2));
+  const dayBeforeYestKey = `${dby.getUTCFullYear()}-${dby.getUTCMonth()+1}-${dby.getUTCDate()}`;
+  return s.lastDate === dayBeforeYestKey;
+}
+
+function renderRescueBanner() {
+  const banner = document.getElementById('rescue-banner');
+  if (!banner) return;
+  if (curRun === 'daily' && isRescueEligible()) {
+    const s = getStreak();
+    const textEl = document.getElementById('rescue-banner-text');
+    if (textEl) textEl.textContent = `Save your ${s.count}-day streak \u2014 solve yesterday\u2019s puzzle.`;
+    banner.style.display = '';
+  } else {
+    banner.style.display = 'none';
+  }
+}
+
+const _milestoneData = {
+  7:   { label: '7-Day Streak',   sub: 'A week of daily mastery.',               glow: '#E8872A', tier: '7'   },
+  30:  { label: '30-Day Streak',  sub: 'A month on the board.',                  glow: '#E8A030', tier: '30'  },
+  100: { label: '100-Day Streak', sub: 'Uncommon dedication.',                   glow: '#FFD060', tier: '100' },
+  365: { label: '365-Day Streak', sub: 'One full year. The board knows you.',    glow: '#FFE880', tier: '365' },
+};
+
+function triggerMilestoneCelebration(count) {
+  const ov = document.getElementById('milestone-overlay');
+  if (!ov) return;
+  const data = _milestoneData[count] || { label: `${count}-Day Streak`, sub: 'Keep going.', glow: '#E8872A', tier: '7' };
+  const labelEl = ov.querySelector('.milestone-label');
+  const subEl   = ov.querySelector('.milestone-sub');
+  const countEl = ov.querySelector('.milestone-count');
+  if (labelEl) labelEl.textContent = data.label;
+  if (subEl)   subEl.textContent   = data.sub;
+  if (countEl) countEl.textContent = count;
+  ov.setAttribute('data-tier', data.tier);
+  ov.style.setProperty('--mg', data.glow);
+  ov.classList.add('show');
+  setTimeout(() => ov.classList.remove('show'), 4800);
 }
 
 
@@ -1346,7 +1457,7 @@ function resetAllProgress() {
     'Yes, reset all',
     () => {
       try {
-        [STORAGE_KEY, STORAGE_KEY_V2, ANALYTICS_KEY, STREAK_KEY, DAILY_KEY, DAILY_KEY_V2].forEach(k => localStorage.removeItem(k));
+        [STORAGE_KEY, STORAGE_KEY_V2, ANALYTICS_KEY, STREAK_KEY, STREAK_KEY_V2, DAILY_KEY, DAILY_KEY_V2].forEach(k => localStorage.removeItem(k));
       } catch(e) {}
       hideOverlay();
       location.reload();
@@ -1367,7 +1478,7 @@ function renderStreak() {
   if (s.count > 0) {
     el.textContent = s.count;
     if (labelMain) labelMain.textContent = `${s.count}-Day Streak`;
-    if (labelSub) labelSub.textContent = s.count >= 7 ? 'On fire! Keep it going' : 'Play daily to grow it';
+    if (labelSub) labelSub.textContent = s.count >= 7 ? 'On fire. Keep it going.' : 'Play daily to grow it.';
     if (bar) {
       bar.style.borderColor = s.count >= 7 ? 'rgba(232,135,26,.4)' : 'rgba(232,135,26,.14)';
       bar.style.background  = s.count >= 7 ? 'rgba(232,135,26,.12)' : 'rgba(232,135,26,.06)';
@@ -1376,13 +1487,14 @@ function renderStreak() {
   } else {
     el.textContent = '';
     if (labelMain) labelMain.textContent = 'Daily Streak';
-    if (labelSub) labelSub.textContent = 'Play the daily to start one';
+    if (labelSub) labelSub.textContent = 'Play the daily to start one.';
     if (flame) flame.textContent = '🔥';
     if (bar) {
       bar.style.borderColor = '';
       bar.style.background = '';
     }
   }
+  renderRescueBanner();
 }
 
 

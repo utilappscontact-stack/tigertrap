@@ -1910,3 +1910,174 @@ html, body {
 #launch-counts {
   color: #BCA060 !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   C3 — Rescue banner + Milestone overlay
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Rescue banner ──────────────────────────────────────────── */
+#rescue-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px auto 0;
+  padding: 9px 14px;
+  max-width: 340px;
+  border-radius: 8px;
+  background: linear-gradient(175deg, #241808 0%, #180F05 100%);
+  border: 1px solid rgba(232,135,26,.40);
+  box-shadow: 0 2px 10px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,200,100,.08);
+  font-size: 11px;
+  letter-spacing: .8px;
+  color: #D49040;
+  text-transform: uppercase;
+  font-family: inherit;
+}
+.rescue-icon {
+  font-size: 15px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+#rescue-banner-text {
+  flex: 1;
+  text-align: left;
+}
+
+/* ── Milestone overlay ──────────────────────────────────────── */
+#milestone-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(8,5,2,.82);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .35s ease;
+}
+#milestone-overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+.milestone-inner {
+  position: relative;
+  text-align: center;
+  padding: 40px 32px 32px;
+  border-radius: 18px;
+  background:
+    url("assets/bg/stone-texture.jpg") repeat,
+    linear-gradient(175deg, #1E1408 0%, #120D06 100%);
+  background-blend-mode: multiply;
+  background-size: 400px auto, auto;
+  border: 1px solid rgba(200,130,40,.35);
+  box-shadow: 0 24px 64px rgba(0,0,0,.70), inset 0 1px 0 rgba(255,210,120,.10);
+  max-width: 300px;
+  width: 88vw;
+  overflow: hidden;
+}
+.milestone-rays {
+  position: absolute;
+  inset: -60px;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg, rgba(232,135,26,.04) 6deg,
+    transparent 12deg, rgba(232,135,26,.04) 18deg,
+    transparent 24deg, rgba(232,135,26,.04) 30deg,
+    transparent 36deg, rgba(232,135,26,.04) 42deg,
+    transparent 48deg, rgba(232,135,26,.04) 54deg,
+    transparent 60deg, rgba(232,135,26,.04) 66deg,
+    transparent 72deg, rgba(232,135,26,.04) 78deg,
+    transparent 84deg, rgba(232,135,26,.04) 90deg,
+    transparent 96deg, rgba(232,135,26,.04) 102deg,
+    transparent 108deg, rgba(232,135,26,.04) 114deg,
+    transparent 120deg, rgba(232,135,26,.04) 126deg,
+    transparent 132deg, rgba(232,135,26,.04) 138deg,
+    transparent 144deg, rgba(232,135,26,.04) 150deg,
+    transparent 156deg, rgba(232,135,26,.04) 162deg,
+    transparent 168deg, rgba(232,135,26,.04) 174deg,
+    transparent 180deg, rgba(232,135,26,.04) 186deg,
+    transparent 192deg, rgba(232,135,26,.04) 198deg,
+    transparent 204deg, rgba(232,135,26,.04) 210deg,
+    transparent 216deg, rgba(232,135,26,.04) 222deg,
+    transparent 228deg, rgba(232,135,26,.04) 234deg,
+    transparent 240deg, rgba(232,135,26,.04) 246deg,
+    transparent 252deg, rgba(232,135,26,.04) 258deg,
+    transparent 264deg, rgba(232,135,26,.04) 270deg,
+    transparent 276deg, rgba(232,135,26,.04) 282deg,
+    transparent 288deg, rgba(232,135,26,.04) 294deg,
+    transparent 300deg, rgba(232,135,26,.04) 306deg,
+    transparent 312deg, rgba(232,135,26,.04) 318deg,
+    transparent 324deg, rgba(232,135,26,.04) 330deg,
+    transparent 336deg, rgba(232,135,26,.04) 342deg,
+    transparent 348deg, rgba(232,135,26,.04) 354deg,
+    transparent 360deg
+  );
+  pointer-events: none;
+  animation: milestone-spin 18s linear infinite;
+}
+#milestone-overlay.show .milestone-rays { opacity: 1; }
+
+.milestone-count {
+  font-size: 64px;
+  font-family: inherit;
+  font-weight: normal;
+  letter-spacing: -2px;
+  line-height: 1;
+  color: var(--mg, #E8872A);
+  text-shadow: 0 0 32px var(--mg, #E8872A), 0 0 64px rgba(232,135,26,.25);
+  animation: milestone-pulse 1.4s ease-in-out infinite;
+  margin-bottom: 10px;
+}
+.milestone-label {
+  font-size: 13px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #EDE0C4;
+  text-shadow: 0 1px 4px rgba(0,0,0,.9);
+  margin-bottom: 8px;
+}
+.milestone-sub {
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #7A5020;
+  margin-bottom: 24px;
+}
+.milestone-dismiss {
+  background: linear-gradient(175deg, #241808 0%, #180F05 100%);
+  border: 1px solid rgba(200,130,40,.45);
+  border-bottom: 2px solid rgba(80,40,5,.6);
+  border-radius: 6px;
+  color: #D49040;
+  font-family: inherit;
+  font-size: 10px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  padding: 10px 24px;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255,200,100,.09), 0 2px 8px rgba(0,0,0,.5);
+}
+.milestone-dismiss:hover { color: #FFD060; border-color: rgba(232,155,50,.68); }
+.milestone-dismiss:active { transform: translateY(1px); }
+
+/* Tier-specific glow intensity */
+#milestone-overlay[data-tier="30"]  .milestone-count { animation-duration: 1.1s; }
+#milestone-overlay[data-tier="100"] .milestone-count { animation-duration: .9s; }
+#milestone-overlay[data-tier="365"] .milestone-count {
+  animation-duration: .7s;
+  font-size: 72px;
+}
+#milestone-overlay[data-tier="365"] .milestone-rays {
+  animation-duration: 8s;
+  opacity: .7;
+}
+
+@keyframes milestone-pulse {
+  0%, 100% { transform: scale(1);    opacity: 1; }
+  50%       { transform: scale(1.06); opacity: .85; }
+}
+@keyframes milestone-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
