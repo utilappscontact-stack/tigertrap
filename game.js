@@ -1,7 +1,7 @@
 // ================================================================
 //  TIGER TRAP  —  Step 4 verified puzzles + run shell
 //  Fixes early solvability, softens board hints, adds smoother menu hover,
-//  and adds Campaign / Daily / Endless shells using safe board symmetries.
+//  and adds Campaign / Daily / Marathon shells using safe board symmetries.
 // ================================================================
 
 
@@ -476,6 +476,32 @@ const DAILY_KEY      = 'tiger_trap_daily_v1';
 const DAILY_KEY_V2   = 'tiger_trap_daily_v2';
 const STREAK_KEY     = 'tiger_trap_streak_v1';
 const STREAK_KEY_V2  = 'tiger_trap_streak_v2';
+const MARATHON_KEY   = 'tiger_trap_marathon_v1';
+
+function getMarathonBest() {
+  try {
+    const raw = localStorage.getItem(MARATHON_KEY);
+    return raw ? JSON.parse(raw) : { longestRun: 0 };
+  } catch(e) { return { longestRun: 0 }; }
+}
+
+function saveMarathonBest(cleared) {
+  try {
+    const cur = getMarathonBest();
+    if (cleared > cur.longestRun) {
+      localStorage.setItem(MARATHON_KEY, JSON.stringify({ longestRun: cleared }));
+      return true;
+    }
+  } catch(e) {}
+  return false;
+}
+
+function endMarathonRun() {
+  const cleared = lvlIdx;
+  const isNewPB = saveMarathonBest(cleared);
+  renderMarathonBest();
+  return { cleared, isNewPB };
+}
 
 function migrateProgressV1toV2() {
   if (localStorage.getItem(STORAGE_KEY_V2)) return;
@@ -817,15 +843,20 @@ function getActiveLevel(idx=0) {
   const pool = getModeLevels(curMode);
   if (curRun==='campaign') return pool[idx] || pool[0];
 
-  const seedBase = curRun==='daily'
-    ? daySeed() + idx * 97
-    : ((Date.now()>>>0) + idx*97 + (curMode==='goat'?7:19));
+  if (curRun === 'endless') {
+    // Ordered ladder: Dawn-only pool (first half of built levels), sorted by difficulty
+    const modeCores = curMode === 'goat' ? GOAT_CORE_LEVELS : TIGER_CORE_LEVELS;
+    const dawnPool = pool.slice(0, modeCores.length)
+      .slice()
+      .sort((a, b) => (a.difficulty || 0) - (b.difficulty || 0));
+    return dawnPool[idx % dawnPool.length];
+  }
 
+  const seedBase = daySeed() + idx * 97;
   const rand = mulberry32(seedBase);
   const base = pool[Math.floor(rand()*pool.length)] || pool[0];
   const variant = SAFE_VARIANTS[Math.floor(rand()*SAFE_VARIANTS.length)];
-  const labelPrefix = curRun==='daily' ? 'Daily' : 'Endless';
-  return transformLevel(base, variant, labelPrefix);
+  return transformLevel(base, variant, 'Daily');
 }
 
 function setRunType(type) {
@@ -1526,6 +1557,18 @@ function renderStreak() {
   renderRescueBanner();
 }
 
+function renderMarathonBest() {
+  const el = document.getElementById('marathon-pb-bar');
+  if (!el) return;
+  const mb = getMarathonBest();
+  if (mb.longestRun > 0) {
+    el.textContent = `MARATHON · BEST RUN: ${mb.longestRun} LEVEL${mb.longestRun !== 1 ? 'S' : ''}`;
+    el.style.display = 'block';
+  } else {
+    el.style.display = 'none';
+  }
+}
+
 
 
 
@@ -1671,7 +1714,9 @@ function loadLevel(idx) {
     const sideLabel = curMode === 'goat' ? 'Goat' : 'Tiger';
     _lvlDisplay = `Daily · ${stamp} · ${sideLabel}`;
   } else {
-    _lvlDisplay = 'Endless Mode';
+    const mb = getMarathonBest();
+    const bestStr = mb.longestRun > 0 ? ` · Best: ${mb.longestRun}` : '';
+    _lvlDisplay = `Marathon · Run ${lvlIdx + 1}${bestStr}`;
   }
   document.getElementById('level-label').textContent = _lvlDisplay;
   // Build richer goal display
@@ -2006,10 +2051,12 @@ function execGoatMove(from, to) {
         : `Solved in ${m} move${m>1?'s':''}.`,
       (curRun==='campaign' && lvlIdx<GOAT_LEVELS.length-1) ? 'Next →'
         : curRun==='daily' ? 'Play Tiger →'
+        : curRun==='endless' ? 'Next →'
         : 'Play Again',
       (curRun==='campaign' && lvlIdx<GOAT_LEVELS.length-1)
         ? () => showLevelIntro(lvlIdx+1, () => startMode(curMode, lvlIdx+1))
         : curRun==='daily' ? startDailyTigerSide
+        : curRun==='endless' ? () => loadLevel(lvlIdx+1)
         : () => startMode(curMode, 0),
       'Menu', showStart,
       {mode:'goat',title:'Trapped!',moves:m,moveLimit:S.moveLimit,won:true,run:curRun},
@@ -2051,16 +2098,30 @@ function runTigerAI() {
   if (S.capturedGoats>=S.maxCaptures) {
     S.phase='lost'; haptic.fail();
     trackEvent('level_fail', { mode:curMode, level:lvlIdx+1, run:curRun });
-    setTimeout(()=>showOverlay('💨','Escaped','The tiger broke through.',
-      'Try Again',()=>loadLevel(lvlIdx),'Menu',showStart, null, 'down'),420);
+    setTimeout(()=>{
+      if (curRun==='endless') {
+        const {cleared,isNewPB}=endMarathonRun();
+        const sub=isNewPB?`New record — ${cleared} level${cleared!==1?'s':''}!`:cleared>0?`Cleared ${cleared} level${cleared!==1?'s':''}. Best: ${getMarathonBest().longestRun}`:'Best: 0 — start over!';
+        showOverlay('💨','Run Ended',sub,'Start Over',()=>startMode(curMode,0),'Menu',showStart,null,'down');
+      } else {
+        showOverlay('💨','Escaped','The tiger broke through.','Try Again',()=>loadLevel(lvlIdx),'Menu',showStart,null,'down');
+      }
+    },420);
     return;
   }
   // Fail: move limit hit
   if (S.moveCount>=S.moveLimit) {
     S.phase='lost'; haptic.fail();
     trackEvent('level_fail', { mode:curMode, level:lvlIdx+1, run:curRun });
-    setTimeout(()=>showOverlay('⏱','Too Slow','Tiger wasn\'t trapped in time.',
-      'Try Again',()=>loadLevel(lvlIdx),'Menu',showStart, null, 'down'),420);
+    setTimeout(()=>{
+      if (curRun==='endless') {
+        const {cleared,isNewPB}=endMarathonRun();
+        const sub=isNewPB?`New record — ${cleared} level${cleared!==1?'s':''}!`:cleared>0?`Cleared ${cleared} level${cleared!==1?'s':''}. Best: ${getMarathonBest().longestRun}`:'Best: 0 — start over!';
+        showOverlay('⏱','Run Ended',sub,'Start Over',()=>startMode(curMode,0),'Menu',showStart,null,'down');
+      } else {
+        showOverlay('⏱','Too Slow','Tiger wasn\'t trapped in time.','Try Again',()=>loadLevel(lvlIdx),'Menu',showStart,null,'down');
+      }
+    },420);
   }
 }
 
@@ -2101,12 +2162,14 @@ function execTigerSlide(to) {
           ? `Tiger side done in ${S.moveCount} move${S.moveCount>1?'s':''}. Both sides solved!`
           : 'You broke free!',
         (curRun==='campaign' && lvlIdx<TIGER_LEVELS.length-1) ? 'Next →'
+          : curRun==='endless' ? 'Next →'
           : _dailyDone ? 'Back to Menu'
           : 'Play Again',
         () => {
           if (curRun==='campaign' && lvlIdx<TIGER_LEVELS.length-1) {
             showLevelIntro(lvlIdx+1, () => startMode(curMode, lvlIdx+1));
-          } else { showStart(); }
+          } else if (curRun==='endless') { loadLevel(lvlIdx+1); }
+          else { showStart(); }
         },
         'Menu', showStart,
         _dailyDone
@@ -2144,12 +2207,14 @@ function execTigerJump(jmp) {
           ? `Tiger side done in ${S.moveCount} move${S.moveCount>1?'s':''}. Both sides solved!`
           : `Captured ${_captCount} goat${_captCount>1?'s':''}!`,
         (curRun==='campaign' && lvlIdx<TIGER_LEVELS.length-1) ? 'Next →'
+          : curRun==='endless' ? 'Next →'
           : _dailyDone ? 'Back to Menu'
           : 'Play Again',
         () => {
           if (curRun==='campaign' && lvlIdx<TIGER_LEVELS.length-1) {
             showLevelIntro(lvlIdx+1, () => startMode(curMode, lvlIdx+1));
-          } else { showStart(); }
+          } else if (curRun==='endless') { loadLevel(lvlIdx+1); }
+          else { showStart(); }
         },
         'Menu', showStart,
         _dailyDone
@@ -2209,10 +2274,12 @@ function runGoatAI() {
           ? 'Goats had no moves. Both sides solved!'
           : 'The goats have no moves left.',
         (curRun==='campaign' && lvlIdx<TIGER_LEVELS.length-1) ? 'Next →'
+          : curRun==='endless' ? 'Next →'
           : _dailyDone ? 'Back to Menu'
           : 'Play Again',
         () => {
           if (curRun==='campaign' && lvlIdx<TIGER_LEVELS.length-1) { loadLevel(lvlIdx+1); }
+          else if (curRun==='endless') { loadLevel(lvlIdx+1); }
           else { showStart(); }
         },
         'Menu', showStart,
@@ -2229,16 +2296,30 @@ function runGoatAI() {
   if (!S.legalSlides.length&&!S.legalJumps.length) {
     S.phase='lost'; haptic.fail(); triggerShake(8,300);
     trackEvent('level_fail', { mode:curMode, level:lvlIdx+1, run:curRun });
-    setTimeout(()=>showOverlay('🔒','Trapped!','The goats closed in.',
-      'Try Again',()=>loadLevel(lvlIdx),'Menu',showStart),520);
+    setTimeout(()=>{
+      if (curRun==='endless') {
+        const {cleared,isNewPB}=endMarathonRun();
+        const sub=isNewPB?`New record — ${cleared} level${cleared!==1?'s':''}!`:cleared>0?`Cleared ${cleared} level${cleared!==1?'s':''}. Best: ${getMarathonBest().longestRun}`:'Best: 0 — start over!';
+        showOverlay('🔒','Run Ended',sub,'Start Over',()=>startMode(curMode,0),'Menu',showStart);
+      } else {
+        showOverlay('🔒','Trapped!','The goats closed in.','Try Again',()=>loadLevel(lvlIdx),'Menu',showStart);
+      }
+    },520);
     return;
   }
   // Fail: move limit
   if (S.moveCount>=S.moveLimit) {
     S.phase='lost'; haptic.fail();
     trackEvent('level_fail', { mode:curMode, level:lvlIdx+1, run:curRun });
-    setTimeout(()=>showOverlay('⏱','Time\'s Up','Didn\'t reach the goal in time.',
-      'Try Again',()=>loadLevel(lvlIdx),'Menu',showStart),420);
+    setTimeout(()=>{
+      if (curRun==='endless') {
+        const {cleared,isNewPB}=endMarathonRun();
+        const sub=isNewPB?`New record — ${cleared} level${cleared!==1?'s':''}!`:cleared>0?`Cleared ${cleared} level${cleared!==1?'s':''}. Best: ${getMarathonBest().longestRun}`:'Best: 0 — start over!';
+        showOverlay('⏱','Run Ended',sub,'Start Over',()=>startMode(curMode,0),'Menu',showStart);
+      } else {
+        showOverlay('⏱','Time\'s Up','Didn\'t reach the goal in time.','Try Again',()=>loadLevel(lvlIdx),'Menu',showStart);
+      }
+    },420);
   }
 }
 
@@ -3134,7 +3215,7 @@ function getShareText() {
   }
 
   const modeStr = r.mode==='tiger' ? '\uD83D\uDC2F Tiger' : '\uD83D\uDC10 Goat';
-  const runStr  = r.run==='daily' ? ' \u00B7 Daily' : r.run==='endless' ? ' \u00B7 Endless' : '';
+  const runStr  = r.run==='daily' ? ' \u00B7 Daily' : r.run==='endless' ? ' \u00B7 Marathon' : '';
   const result  = r.won
     ? `Solved in ${r.moves} move${r.moves!==1?'s':''}!`
     : 'Did not solve.';
@@ -3352,6 +3433,7 @@ function showStart() {
   updateHUD();
   updateStartMeta();
   renderStreak();
+  renderMarathonBest();
   document.getElementById('start-screen').classList.remove('hidden');
   document.getElementById('game-screen').classList.add('hidden');
 }
@@ -3623,7 +3705,7 @@ window.addEventListener('load',()=>{
 
   requestAnimationFrame(()=>{
     try { screen.orientation && screen.orientation.lock && screen.orientation.lock('portrait').catch(()=>{}); } catch(e){}
-    setRunType(curRun); setupCanvas(); updateStartMeta(); renderStartProgress(); renderStreak();
+    setRunType(curRun); setupCanvas(); updateStartMeta(); renderStartProgress(); renderStreak(); renderMarathonBest();
     requestAnimationFrame(render);
   });
 });
