@@ -514,7 +514,7 @@ function migrateDailyV1toV2() {
   } catch(e) {}
 }
 
-function markDailySolved(side) {
+function markDailySolved(side, moves, stars) {
   migrateDailyV1toV2();
   try {
     const raw  = localStorage.getItem(DAILY_KEY_V2);
@@ -523,6 +523,14 @@ function markDailySolved(side) {
     if (!data.tigerSolved) data.tigerSolved = {};
     const bucket = side === 'goat' ? 'goatSolved' : 'tigerSolved';
     data[bucket][getTodayKey()] = true;
+    if (moves !== undefined) {
+      const mKey = side === 'goat' ? 'goatMoves' : 'tigerMoves';
+      const sKey = side === 'goat' ? 'goatStars' : 'tigerStars';
+      if (!data[mKey]) data[mKey] = {};
+      if (!data[sKey]) data[sKey] = {};
+      data[mKey][getTodayKey()] = moves;
+      data[sKey][getTodayKey()] = stars || 1;
+    }
     localStorage.setItem(DAILY_KEY_V2, JSON.stringify(data));
   } catch(e) {}
 }
@@ -540,6 +548,23 @@ function isDailySolvedToday(side) {
 
 function isDailyCompleteToday() {
   return isDailySolvedToday('goat') && isDailySolvedToday('tiger');
+}
+
+function getDailyShareData() {
+  try {
+    const raw = localStorage.getItem(DAILY_KEY_V2);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    const today = getTodayKey();
+    return {
+      date:       today,
+      goatMoves:  (data.goatMoves  || {})[today],
+      goatStars:  (data.goatStars  || {})[today],
+      tigerMoves: (data.tigerMoves || {})[today],
+      tigerStars: (data.tigerStars || {})[today],
+      streak:     getStreak().count,
+    };
+  } catch(e) { return null; }
 }
 
 let progress = loadProgress();
@@ -610,7 +635,11 @@ function setCurrentIndex(mode, idx) {
 function registerCampaignWin() {
   if (curRun !== 'campaign') {
     if (curRun === 'daily') {
-      markDailySolved(curMode);
+      const lvl = runtimeLevel;
+      const atPar   = lvl && S.moveCount <= lvl.moveLimit;
+      const noHints = (progress.hintsUsedThisLevel || 0) === 0;
+      const stars   = (atPar && noHints) ? 3 : atPar ? 2 : 1;
+      markDailySolved(curMode, S.moveCount, stars);
       if (isDailyCompleteToday()) updateStreak();
     }
     return;
@@ -2080,7 +2109,9 @@ function execTigerSlide(to) {
           } else { showStart(); }
         },
         'Menu', showStart,
-        {mode:'tiger',title:'Escaped!',moves:S.moveCount,moveLimit:S.moveLimit,won:true,run:curRun},
+        _dailyDone
+          ? { isDaily:true, ...getDailyShareData() }
+          : {mode:'tiger',title:'Escaped!',moves:S.moveCount,moveLimit:S.moveLimit,won:true,run:curRun},
         'up'
       );
     };
@@ -2121,7 +2152,9 @@ function execTigerJump(jmp) {
           } else { showStart(); }
         },
         'Menu', showStart,
-        {mode:'tiger',title:'Captured!',moves:S.moveCount,moveLimit:S.moveLimit,won:true,run:curRun},
+        _dailyDone
+          ? { isDaily:true, ...getDailyShareData() }
+          : {mode:'tiger',title:'Captured!',moves:S.moveCount,moveLimit:S.moveLimit,won:true,run:curRun},
         'up'
       );
     };
@@ -2182,7 +2215,9 @@ function runGoatAI() {
           if (curRun==='campaign' && lvlIdx<TIGER_LEVELS.length-1) { loadLevel(lvlIdx+1); }
           else { showStart(); }
         },
-        'Menu', showStart);
+        'Menu', showStart,
+        _dailyDone ? { isDaily:true, ...getDailyShareData() } : undefined
+      );
     }, 480);
     return;
   }
@@ -2837,7 +2872,114 @@ let _cb1=null,_cb2=null;
 // -- RESULT CARD ------------------------------------------------
 let _lastResult = null; // {mode, title, moves, moveLimit, won, run}
 
+function drawDailyResultCard(d) {
+  const rc = document.getElementById('result-canvas');
+  if (!rc) return;
+  const W = 520, H = 320;
+  rc.width = W; rc.height = H;
+  const cx = rc.getContext('2d');
+
+  // Stone background
+  cx.fillStyle = '#110B06';
+  cx.fillRect(0, 0, W, H);
+  if (window._boardImg && window._boardImg.complete && window._boardImg.naturalWidth > 0) {
+    cx.save(); cx.globalAlpha = 0.10;
+    cx.drawImage(window._boardImg, 0, 0, W, H);
+    cx.restore();
+  }
+
+  // Outer border
+  cx.strokeStyle = 'rgba(200,130,40,0.45)'; cx.lineWidth = 1.5;
+  cx.strokeRect(1, 1, W - 2, H - 2);
+
+  // Amber left accent strip
+  const lGrad = cx.createLinearGradient(0, 0, 0, H);
+  lGrad.addColorStop(0, 'rgba(232,135,26,0)');
+  lGrad.addColorStop(0.5, 'rgba(232,135,26,0.9)');
+  lGrad.addColorStop(1, 'rgba(232,135,26,0)');
+  cx.fillStyle = lGrad; cx.fillRect(0, 0, 3, H);
+
+  // Title
+  cx.fillStyle = '#FFD060';
+  cx.font = 'bold 22px Georgia, serif';
+  cx.fillText('TIGER TRAP', 24, 40);
+
+  // Date + Daily badge
+  cx.fillStyle = 'rgba(80,150,220,0.18)';
+  cx.beginPath(); cx.roundRect(24, 50, 50, 17, 3); cx.fill();
+  cx.fillStyle = '#60A0E0';
+  cx.font = '10px Georgia, serif';
+  cx.fillText('DAILY', 33, 62);
+  cx.fillStyle = '#7A5020';
+  cx.font = '11px Georgia, serif';
+  cx.fillText(d.date || '', 84, 62);
+
+  // Divider
+  cx.strokeStyle = 'rgba(60,42,22,0.7)'; cx.lineWidth = 1;
+  cx.beginPath(); cx.moveTo(24, 78); cx.lineTo(W - 24, 78); cx.stroke();
+
+  // Helper: draw filled/empty stars
+  const drawStars = (x, y, count) => {
+    for (let i = 0; i < 3; i++) {
+      cx.fillStyle = i < (count || 0) ? '#FFD060' : '#2E1E0A';
+      cx.font = '17px serif';
+      cx.fillText('★', x + i * 21, y);
+    }
+  };
+
+  // Goat row
+  const goatY = 122;
+  if (window._goatPieceImg && window._goatPieceImg.complete && window._goatPieceImg.naturalWidth > 0) {
+    cx.save(); cx.shadowColor = 'rgba(0,0,0,0.6)'; cx.shadowBlur = 6;
+    cx.drawImage(window._goatPieceImg, 24, goatY - 21, 26, 26);
+    cx.restore();
+  }
+  cx.fillStyle = '#C0B8A8';
+  cx.font = '13px Georgia, serif';
+  cx.fillText('GOAT', 58, goatY);
+  drawStars(115, goatY, d.goatStars);
+  cx.fillStyle = '#7A5020';
+  cx.font = '12px Georgia, serif';
+  const gm = d.goatMoves;
+  cx.fillText(gm !== undefined ? `(${gm} move${gm !== 1 ? 's' : ''})` : '', 185, goatY);
+
+  // Tiger row
+  const tigerY = 174;
+  if (window._tigerPieceImg && window._tigerPieceImg.complete && window._tigerPieceImg.naturalWidth > 0) {
+    cx.save(); cx.shadowColor = 'rgba(0,0,0,0.6)'; cx.shadowBlur = 6;
+    cx.drawImage(window._tigerPieceImg, 24, tigerY - 21, 26, 26);
+    cx.restore();
+  }
+  cx.fillStyle = '#E8A048';
+  cx.font = '13px Georgia, serif';
+  cx.fillText('TIGER', 58, tigerY);
+  drawStars(115, tigerY, d.tigerStars);
+  cx.fillStyle = '#7A5020';
+  cx.font = '12px Georgia, serif';
+  const tm = d.tigerMoves;
+  cx.fillText(tm !== undefined ? `(${tm} move${tm !== 1 ? 's' : ''})` : '', 185, tigerY);
+
+  // Streak row (if active)
+  if (d.streak > 0) {
+    cx.fillStyle = 'rgba(232,135,26,0.10)';
+    cx.beginPath(); cx.roundRect(24, 198, 130, 20, 4); cx.fill();
+    cx.fillStyle = '#C07828';
+    cx.font = '10px Georgia, serif';
+    cx.fillText(`\uD83D\uDD25 ${d.streak}-day streak`, 34, 212);
+  }
+
+  // Bottom divider
+  cx.strokeStyle = 'rgba(60,42,22,0.5)'; cx.lineWidth = 1;
+  cx.beginPath(); cx.moveTo(24, H - 28); cx.lineTo(W - 24, H - 28); cx.stroke();
+
+  // Branding
+  cx.fillStyle = 'rgba(90,60,25,0.55)';
+  cx.font = '10px Georgia, serif';
+  cx.fillText('tigertrap.app', W - 108, H - 12);
+}
+
 function drawResultCard(result) {
+  if (result && result.isDaily) { drawDailyResultCard(result); return; }
   const rc = document.getElementById('result-canvas');
   if (!rc) return;
   const W=520, H=280;
@@ -2935,22 +3077,35 @@ function drawResultCard(result) {
 
 function showResultCard(result) {
   _lastResult = result;
-  const rc = document.getElementById('result-canvas');
-  const row = document.getElementById('result-share-row');
-  const badge = document.getElementById('overlay-badge');
+  const rc       = document.getElementById('result-canvas');
+  const row      = document.getElementById('result-share-row');
+  const badge    = document.getElementById('overlay-badge');
+  const btnCopy  = document.getElementById('btn-copy');
+  const btnShare = document.getElementById('btn-share');
+  const btnDL    = document.getElementById('btn-download');
   if (!rc || !row) return;
 
   drawResultCard(result);
-  rc.style.display='block';
-  row.style.display='flex';
+  rc.style.display = 'block';
+  row.style.display = 'flex';
 
-  if (badge) {
-    if (result.won && result.moves === 1) {
-      badge.innerHTML='<span class="perfect-badge">Perfect solve</span>';
-    } else if (result.won && result.moves <= Math.floor(result.moveLimit * 0.6)) {
-      badge.innerHTML='<span class="perfect-badge" style="color:#A0C050;border-color:rgba(120,180,50,.3)">Under par</span>';
-    } else {
-      badge.innerHTML='';
+  if (result.isDaily) {
+    if (btnCopy)  btnCopy.style.display  = '';
+    if (btnDL)    btnDL.style.display    = '';
+    if (btnShare) btnShare.style.display = navigator.share ? '' : 'none';
+    if (badge)    badge.innerHTML = '';
+  } else {
+    if (btnCopy)  btnCopy.style.display  = 'none';
+    if (btnDL)    btnDL.style.display    = 'none';
+    if (btnShare) btnShare.style.display = '';
+    if (badge) {
+      if (result.won && result.moves === 1) {
+        badge.innerHTML = '<span class="perfect-badge">Perfect solve</span>';
+      } else if (result.won && result.moves <= Math.floor(result.moveLimit * 0.6)) {
+        badge.innerHTML = '<span class="perfect-badge" style="color:#A0C050;border-color:rgba(120,180,50,.3)">Under par</span>';
+      } else {
+        badge.innerHTML = '';
+      }
     }
   }
 }
@@ -2967,12 +3122,23 @@ function hideResultCard() {
 function getShareText() {
   if (!_lastResult) return 'Tiger Trap puzzle game';
   const r = _lastResult;
-  const modeStr = r.mode==='tiger' ? '🐯 Tiger' : '🐐 Goat';
-  const runStr  = r.run==='daily' ? ' · Daily' : r.run==='endless' ? ' · Endless' : '';
+
+  if (r.isDaily) {
+    const st = n => '★'.repeat(n || 0) + '☆'.repeat(3 - (n || 0));
+    const gm = r.goatMoves;  const ts = r.tigerStars;
+    const tm = r.tigerMoves; const gs = r.goatStars;
+    const goatLine  = `\uD83D\uDC10 Goat: ${st(gs)} (${gm !== undefined ? gm + ' move' + (gm !== 1 ? 's' : '') : '?'})`;
+    const tigerLine = `\uD83D\uDC2F Tiger: ${st(ts)} (${tm !== undefined ? tm + ' move' + (tm !== 1 ? 's' : '') : '?'})`;
+    const streakLine = r.streak > 0 ? `\n\uD83D\uDD25 ${r.streak}-day streak` : '';
+    return `Tiger Trap \u00B7 Daily ${r.date || getTodayKey()}\n${goatLine}\n${tigerLine}${streakLine}\ntigertrap.app`;
+  }
+
+  const modeStr = r.mode==='tiger' ? '\uD83D\uDC2F Tiger' : '\uD83D\uDC10 Goat';
+  const runStr  = r.run==='daily' ? ' \u00B7 Daily' : r.run==='endless' ? ' \u00B7 Endless' : '';
   const result  = r.won
     ? `Solved in ${r.moves} move${r.moves!==1?'s':''}!`
     : 'Did not solve.';
-  return `Tiger Trap${runStr} — ${modeStr} mode\n${result}\ntigertrap.game`;
+  return `Tiger Trap${runStr} \u2014 ${modeStr} mode\n${result}\ntigertrap.game`;
 }
 
 // Share button
@@ -3013,6 +3179,21 @@ function _copyText(text, copiedEl) {
     });
   } catch(e) {}
 }
+
+// Copy text button (daily card)
+document.getElementById('btn-copy').addEventListener('click', () => {
+  _copyText(getShareText(), document.getElementById('share-copied'));
+});
+
+// Download PNG button (daily card)
+document.getElementById('btn-download').addEventListener('click', () => {
+  const rc = document.getElementById('result-canvas');
+  if (!rc) return;
+  const a = document.createElement('a');
+  a.download = `tiger-trap-daily-${getTodayKey()}.png`;
+  a.href = rc.toDataURL('image/png');
+  a.click();
+});
 
 function showOverlay(icon,title,sub,b1,cb1,b2,cb2, resultData, direction) {
   direction = direction || 'up';
