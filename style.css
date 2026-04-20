@@ -2103,3 +2103,38 @@ html, body {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   C6.2 — Home screen Tiger/Goat tile vertical layout
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Flex column layout; keep 100px top padding so the baked-in
+   medallion background is fully visible before content begins */
+#start-screen .mode-card {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  padding: 130px 12px 14px !important;
+  min-height: 232px !important;
+  gap: 0 !important;
+}
+#start-screen .mode-card .mode-card-title {
+  margin-top: 0 !important;
+  margin-bottom: 8px !important;
+  flex: 0 0 auto !important;
+}
+#start-screen .mode-card .mode-card-fantasy {
+  margin-bottom: 14px !important;
+  flex: 0 0 auto !important;
+  line-height: 1.45 !important;
+}
+#start-screen .mode-card .mode-card-cta {
+  margin-top: auto !important;
+  margin-bottom: 0 !important;
+}
+#start-screen .mode-card .mode-progress {
+  margin-top: 10px !important;
+  padding-top: 8px !important;
+  border-top: 1px solid rgba(180,120,40,.18) !important;
+}
