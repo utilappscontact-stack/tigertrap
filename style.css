@@ -187,9 +187,14 @@ html, body {
 
 #board-container {
   flex:1 1 auto; display:flex; align-items:center; justify-content:center;
-  min-height:0; padding:4px;
+  min-height:0; padding:2px 4px;
 }
-#board { display:block; touch-action:none; border-radius:6px; }
+#board {
+  display: block;
+  touch-action: none;
+  border-radius: 10px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(180,110,30,0.10);
+}
 
 #bottom-bar {
   flex:0 0 auto; display:flex; align-items:center;
@@ -236,7 +241,7 @@ html, body {
 #top-bar {
   align-items:center;
   gap:8px;
-  padding:6px 0 4px;
+  padding:4px 0 2px;
   flex-wrap:nowrap;
 }
 #top-center {
@@ -279,7 +284,7 @@ html, body {
 }
 
 #status-row {
-  padding:4px 0 3px;
+  padding:3px 0 2px;
   flex-wrap:nowrap;
   overflow:hidden;
   gap:6px;
@@ -319,14 +324,14 @@ html, body {
   flex:0 0 auto;
   display:flex;
   justify-content:center;
-  padding:2px 0 6px;
+  padding:2px 0 4px;
 }
 #move-info {
   font-size:11px;
 }
 #bottom-bar {
   gap:10px;
-  padding:4px 0 12px;
+  padding:3px 0 10px;
 }
 .btn {
   padding:12px 0;
@@ -1104,17 +1109,10 @@ html, body {
   background-size: 100% 100%, cover;
   background-position: 0 0, center top;
   background-repeat: no-repeat;
-  border-top:    1px solid rgba(255,195,90,.40);
-  border-left:   1px solid rgba(200,130,40,.44);
-  border-right:  1px solid rgba(60,30,8,.62);
-  border-bottom: 2px solid rgba(0,0,0,.84);
+  border: none;
   box-shadow:
     0 12px 36px rgba(0,0,0,.70),
     0  4px 12px rgba(0,0,0,.46),
-    inset 0  2px 0 rgba(255,210,100,.22),
-    inset 0 -2px 0 rgba(0,0,0,.80),
-    inset  2px 0 0 rgba(255,205,90,.14),
-    inset -2px 0 0 rgba(0,0,0,.40),
     inset 0 0 48px rgba(0,0,0,.30);
   border-radius: 16px;
 }
@@ -1122,15 +1120,7 @@ html, body {
   box-shadow:
     0 18px 50px rgba(200,100,20,.30),
     0  6px 16px rgba(0,0,0,.52),
-    inset 0  2px 0 rgba(255,220,120,.30),
-    inset 0 -2px 0 rgba(0,0,0,.80),
-    inset  2px 0 0 rgba(255,210,100,.20),
-    inset -2px 0 0 rgba(0,0,0,.40),
     inset 0 0 40px rgba(0,0,0,.22);
-  border-top-color:   rgba(255,210,100,.56);
-  border-left-color:  rgba(232,155,50,.60);
-  border-right-color: rgba(60,30,8,.62);
-  border-bottom-color: rgba(0,0,0,.84);
 }
 
 /* Text legibility over the photo */
@@ -1146,17 +1136,10 @@ html, body {
   background-size: 100% 100%, cover;
   background-position: 0 0, center top;
   background-repeat: no-repeat;
-  border-top:    1px solid rgba(210,200,182,.34);
-  border-left:   1px solid rgba(160,148,140,.28);
-  border-right:  1px solid rgba(30,20,14,.66);
-  border-bottom: 2px solid rgba(0,0,0,.88);
+  border: none;
   box-shadow:
     0 12px 36px rgba(0,0,0,.74),
     0  4px 12px rgba(0,0,0,.50),
-    inset 0  2px 0 rgba(220,210,190,.20),
-    inset 0 -2px 0 rgba(0,0,0,.84),
-    inset  2px 0 0 rgba(215,205,185,.12),
-    inset -2px 0 0 rgba(0,0,0,.42),
     inset 0 0 48px rgba(0,0,0,.36);
   border-radius: 16px;
 }
@@ -1164,15 +1147,7 @@ html, body {
   box-shadow:
     0 18px 50px rgba(0,0,0,.46),
     0  6px 16px rgba(0,0,0,.54),
-    inset 0  2px 0 rgba(220,212,196,.26),
-    inset 0 -2px 0 rgba(0,0,0,.84),
-    inset  2px 0 0 rgba(215,205,185,.18),
-    inset -2px 0 0 rgba(0,0,0,.42),
     inset 0 0 40px rgba(0,0,0,.28);
-  border-top-color:   rgba(212,202,186,.46);
-  border-left-color:  rgba(178,168,152,.40);
-  border-right-color: rgba(30,20,14,.66);
-  border-bottom-color: rgba(0,0,0,.88);
 }
 
 /* Text legibility over the photo */
@@ -1184,95 +1159,116 @@ html, body {
 .tiger-card,
 .goat-card {
   padding-top: 100px;
+  padding-bottom: 16px;
   min-height: 240px;
 }
 
 /* ── PLAY TIGER / PLAY GOAT buttons — carved stone slab ── */
 .mode-card-cta {
-  border-radius: 8px !important;
-  letter-spacing: 2.5px;
+  border-radius: 5px !important;
+  letter-spacing: 3px;
   font-size: 10px;
   text-transform: uppercase;
-  padding: 8px 16px;
+  padding: 11px 20px;
+  width: 100%;
 }
 .tiger-card .mode-card-cta {
-  background: linear-gradient(175deg, #2A1608 0%, #1A0E06 100%);
-  border-top:    1px solid rgba(255,200,90,.30);
-  border-left:   1px solid rgba(200,120,40,.42);
-  border-right:  1px solid rgba(60,28,8,.58);
-  border-bottom: 2px solid rgba(0,0,0,.78);
-  color: #D4A050;
-  text-shadow: 0 1px 3px rgba(0,0,0,.88);
+  background: linear-gradient(180deg, #2C1E0A 0%, #1C1206 55%, #150E05 100%);
+  border-top:    2px solid rgba(220,175,90,.32);
+  border-left:   2px solid rgba(180,130,55,.28);
+  border-right:  2px solid rgba(20,10,3,.75);
+  border-bottom: 3px solid rgba(8,4,1,.90);
+  color: #C8A055;
+  text-shadow: 0 1px 3px rgba(0,0,0,.90);
   box-shadow:
-    inset 0  1px 0 rgba(255,200,90,.18),
-    inset 0 -1px 0 rgba(0,0,0,.62),
-    0 3px 10px rgba(0,0,0,.50);
+    inset 0 1px 0 rgba(255,210,110,.10),
+    inset 0 -2px 4px rgba(0,0,0,.50),
+    0 4px 14px rgba(0,0,0,.55);
 }
 .tiger-card:hover .mode-card-cta,
 .tiger-card:focus-visible .mode-card-cta {
-  border-top-color: rgba(255,210,100,.42);
-  border-left-color: rgba(232,155,60,.56);
-  color: #EAB060;
+  color: #E8B865;
+  border-top-color: rgba(240,200,100,.44);
+  border-left-color: rgba(210,155,65,.38);
+}
+.tiger-card:active .mode-card-cta {
+  transform: translateY(1px);
+  border-bottom-width: 2px;
 }
 .goat-card .mode-card-cta {
-  background: linear-gradient(175deg, #1E1A16 0%, #141210 100%);
-  border-top:    1px solid rgba(210,200,182,.22);
-  border-left:   1px solid rgba(155,143,128,.28);
-  border-right:  1px solid rgba(0,0,0,.58);
-  border-bottom: 2px solid rgba(0,0,0,.80);
-  color: #A09070;
-  text-shadow: 0 1px 3px rgba(0,0,0,.88);
+  background: linear-gradient(180deg, #201C18 0%, #161410 55%, #110F0D 100%);
+  border-top:    2px solid rgba(195,183,162,.24);
+  border-left:   2px solid rgba(155,143,126,.20);
+  border-right:  2px solid rgba(10,8,6,.75);
+  border-bottom: 3px solid rgba(5,4,3,.92);
+  color: #9A8E78;
+  text-shadow: 0 1px 3px rgba(0,0,0,.90);
   box-shadow:
-    inset 0  1px 0 rgba(210,200,182,.14),
-    inset 0 -1px 0 rgba(0,0,0,.64),
-    0 3px 10px rgba(0,0,0,.52);
+    inset 0 1px 0 rgba(210,200,180,.08),
+    inset 0 -2px 4px rgba(0,0,0,.52),
+    0 4px 14px rgba(0,0,0,.55);
 }
 .goat-card:hover .mode-card-cta,
 .goat-card:focus-visible .mode-card-cta {
+  color: #BEB09A;
   border-top-color: rgba(215,205,185,.34);
-  border-left-color: rgba(178,168,152,.42);
-  color: #C0B090;
+  border-left-color: rgba(175,163,144,.28);
+}
+.goat-card:active .mode-card-cta {
+  transform: translateY(1px);
+  border-bottom-width: 2px;
 }
 
 /* ── Campaign / Daily / Endless tabs ───────────────────── */
 .start-run-row {
-  background: linear-gradient(180deg, #110C05 0%, #0C0804 100%);
-  border: 1px solid rgba(200,130,40,.14);
-  border-radius: 12px;
+  background: linear-gradient(180deg, #181008 0%, #0E0A05 100%);
+  border-top:    1px solid rgba(180,140,60,.18);
+  border-left:   1px solid rgba(160,120,50,.14);
+  border-right:  1px solid rgba(0,0,0,.60);
+  border-bottom: 2px solid rgba(0,0,0,.75);
+  border-radius: 8px;
   padding: 4px;
   gap: 4px;
-  box-shadow: inset 0 2px 5px rgba(0,0,0,.55), inset 0 -1px 0 rgba(255,200,80,.04);
+  box-shadow:
+    inset 0 2px 6px rgba(0,0,0,.55),
+    inset 0 -1px 0 rgba(255,200,80,.03),
+    0 4px 12px rgba(0,0,0,.40);
 }
 .start-run-btn {
   background: transparent;
   border: 1px solid transparent;
-  border-bottom: none;
-  border-radius: 8px;
-  color: #3E2A10;
+  border-bottom: 2px solid transparent;
+  border-radius: 5px;
+  color: #4A3418;
   box-shadow: none;
   position: relative;
+  letter-spacing: 2.5px;
+  font-size: 10px;
 }
 .start-run-btn.active {
-  background: linear-gradient(175deg, #2A1A08 0%, #1E1208 100%);
-  border-color: rgba(200,130,40,.50);
-  border-bottom: none;
-  color: #EDE0C4;
-  box-shadow: 0 1px 6px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,210,120,.10);
+  background: linear-gradient(180deg, #2C1E0A 0%, #1C1206 100%);
+  border-top:    1px solid rgba(220,175,90,.30);
+  border-left:   1px solid rgba(180,130,55,.24);
+  border-right:  1px solid rgba(20,10,3,.70);
+  border-bottom: 2px solid rgba(8,4,1,.85);
+  color: #D4A855;
+  box-shadow:
+    inset 0 1px 0 rgba(255,210,110,.09),
+    0 2px 8px rgba(0,0,0,.45);
 }
 .start-run-btn.active::after {
   content: '';
   position: absolute;
-  bottom: 5px; left: 18%;
-  width: 64%; height: 2px;
+  bottom: -1px; left: 15%;
+  width: 70%; height: 2px;
   border-radius: 1px;
   background: linear-gradient(90deg, transparent, #E8A030 25%, #E8A030 75%, transparent);
-  box-shadow: 0 0 7px rgba(232,160,48,.55);
-  transform: none;
+  box-shadow: 0 0 6px rgba(232,160,48,.50);
 }
 .start-run-btn:hover:not(.active) {
-  color: #A07838;
-  border-color: rgba(232,135,26,.24);
-  background: rgba(232,135,26,.05);
+  color: #8A6428;
+  background: rgba(200,130,40,.06);
+  border-color: rgba(200,130,40,.18);
 }
 
 /* ── Streak bar — carved stone panel ───────────────────────────────── */
@@ -1325,6 +1321,8 @@ html, body {
   border-bottom: 3px solid rgba(120,60,5,.8);
   box-shadow: inset 0 1px 0 rgba(255,240,180,.26), 0 6px 24px rgba(200,100,10,.36);
   text-shadow: 0 1px 2px rgba(0,0,0,.5);
+  align-self: center;
+  max-width: min(320px, 85vw);
 }
 #overlay-btn:hover {
   background: linear-gradient(175deg, #F8A030 0%, #D08020 100%);
@@ -1691,18 +1689,20 @@ html, body {
 /* ═══ TASK 4: GAME SCREEN AND BOARD FRAMING ═══ */
 
 #game-screen {
-  background-color: transparent !important;
-  background-image: url("assets/bg/stone-texture.jpg") !important;
-  background-size: 500px auto !important;
-  background-attachment: fixed !important;
+  background-color: #0A0705 !important;
+  background-image: url("assets/bg/stone-bg.jpg") !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-attachment: local !important;
 }
 
-/* Dark overlay to keep game screen legible */
+/* Vignette overlay for depth and legibility */
 #game-screen::before {
   content: '';
   position: fixed;
   inset: 0;
-  background: rgba(8, 5, 2, 0.72);
+  background: radial-gradient(ellipse at center, rgba(60,38,12,0.0) 0%, rgba(6,4,2,0.55) 100%);
   pointer-events: none;
   z-index: 0;
 }
@@ -1826,7 +1826,7 @@ html, body {
 
 /* 1. Background: single stone-bg.jpg at cover — eliminates tile seam */
 #start-screen {
-  background-color: #080603 !important;
+  background-color: #16100A !important;
   background-image: url("assets/bg/stone-bg.jpg") !important;
   background-size: cover !important;
   background-repeat: no-repeat !important;
@@ -1834,9 +1834,9 @@ html, body {
   background-attachment: scroll !important;
 }
 
-/* Ease the dark overlay so the stone photo is actually visible */
+/* Lighter overlay so the stone photo is more visible */
 #start-screen::after {
-  background: rgba(6, 4, 2, 0.50) !important;
+  background: rgba(6, 4, 2, 0.22) !important;
 }
 
 /* 2. Cards: padding already set in Stone Skin section above (100px / min-height 240px) */
@@ -2135,6 +2135,55 @@ html, body {
 }
 #start-screen .mode-card .mode-progress {
   margin-top: 10px !important;
-  padding-top: 8px !important;
-  border-top: 1px solid rgba(180,120,40,.18) !important;
+  margin-bottom: 0 !important;
+  padding-top: 7px !important;
+  padding-bottom: 2px !important;
+  border-top: 1px solid rgba(180,120,40,.15) !important;
+  font-size: 9px !important;
+  letter-spacing: 1px !important;
+}
+
+/* ── C6.4 — In-game top-bar buttons: stone medallion family ──────────────── */
+#top-bar #btn-home,
+#top-bar #btn-sound,
+#top-bar #btn-pause {
+  background: linear-gradient(175deg, #1E1408 0%, #140E05 100%) !important;
+  border: 1px solid rgba(180,120,40,.32) !important;
+  border-bottom: 2px solid rgba(0,0,0,.45) !important;
+  border-radius: 999px !important;
+  color: #A07838 !important;
+  min-width: 44px !important;
+  min-height: 44px !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 16px !important;
+  box-shadow: inset 0 1px 0 rgba(255,200,80,.06), 0 2px 6px rgba(0,0,0,.4) !important;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color .18s, color .18s;
+}
+#top-bar #btn-home:hover, #top-bar #btn-home:focus-visible,
+#top-bar #btn-sound:hover, #top-bar #btn-sound:focus-visible,
+#top-bar #btn-pause:hover, #top-bar #btn-pause:focus-visible {
+  border-color: rgba(232,135,26,.5) !important;
+  color: #E8A030 !important;
+  outline: none;
+}
+#top-bar #btn-sound.muted { opacity: .45; }
+
+/* ── C6.5 — Mode tag: own row between top-bar and status-row ─────────────── */
+#mode-tag-row {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: center;
+  padding: 4px 0 6px;
+}
+#mode-tag-row #mode-tag {
+  font-size: 11px !important;
+  letter-spacing: 3px !important;
+  padding: 5px 16px !important;
+  margin: 0 !important;
+  text-transform: uppercase;
 }

@@ -2195,6 +2195,37 @@ function execTigerJump(jmp) {
   refreshPips();
   startGlide(fromNode, jmp.to, 'tiger', 'jump');
   updateHUD();
+  if (S.objective==='escape'&&S.escapeNodes.includes(jmp.to)) {
+    S.phase='won'; triggerShake(10,400); haptic.trap();
+    addFlash(jmp.to,'rgba(80,210,80,0.85)');
+    registerCampaignWin();
+    const _doEscOverlay = () => {
+      const _dailyDone = curRun==='daily' && isDailyCompleteToday();
+      showOverlay('🏃',
+        _dailyDone ? 'Daily Complete!' : 'Escaped!',
+        _dailyDone
+          ? `Tiger side done in ${S.moveCount} move${S.moveCount>1?'s':''}. Both sides solved!`
+          : 'You broke free!',
+        (curRun==='campaign' && lvlIdx<TIGER_LEVELS.length-1) ? 'Next →'
+          : curRun==='endless' ? 'Next →'
+          : _dailyDone ? 'Back to Menu'
+          : 'Play Again',
+        () => {
+          if (curRun==='campaign' && lvlIdx<TIGER_LEVELS.length-1) {
+            showLevelIntro(lvlIdx+1, () => startMode(curMode, lvlIdx+1));
+          } else if (curRun==='endless') { loadLevel(lvlIdx+1); }
+          else { showStart(); }
+        },
+        'Menu', showStart,
+        _dailyDone
+          ? { isDaily:true, ...getDailyShareData() }
+          : {mode:'tiger',title:'Escaped!',moves:S.moveCount,moveLimit:S.moveLimit,won:true,run:curRun},
+        'up'
+      );
+    };
+    setTimeout(_doEscOverlay, 650);
+    return;
+  }
   if (S.objective==='capture_n'&&S.capturedGoats>=S.target) {
     S.phase='won'; triggerShake(14,500); haptic.trap();
     registerCampaignWin();
@@ -2339,7 +2370,7 @@ function undoMove() {
 
 const canvas=document.getElementById('board');
 const ctx=canvas.getContext('2d');
-let cssSz=0, cell=0, mg=0, dpr=1;
+let cssSz=0, cell=0, mg=0, mgx=0, mgy=0, cellx=0, celly=0, dpr=1;
 
 function setupCanvas() {
   const c=document.getElementById('board-container');
@@ -2348,10 +2379,15 @@ function setupCanvas() {
   canvas.style.width=sz+'px'; canvas.style.height=sz+'px';
   canvas.width=Math.round(sz*dpr); canvas.height=Math.round(sz*dpr);
   ctx.setTransform(dpr,0,0,dpr,0,0);
-  mg=sz*.13; cell=(sz-2*mg)/4;
+  // Grid calibrated to board-stone.jpg dot positions
+  // mgy is 1% less than mgx: top row sits slightly higher to land on the stone dots
+  mgx   = sz * 0.10;  cellx = sz * 0.20;
+  mgy   = sz * 0.09;  celly = sz * 0.2025;
+  mg    = sz * 0.10;
+  cell  = sz * 0.2025;
 }
 
-function nxy(n){return{x:mg+nC(n)*cell, y:mg+nR(n)*cell};}
+function nxy(n){return{x: mgx+nC(n)*cellx, y: mgy+nR(n)*celly};}
 
 // Colors
 const P={
@@ -2413,7 +2449,10 @@ function render(ts) {
     }
   }
 
-  drawLines();
+  // Skip canvas lines when board image is loaded — image has them baked in
+  if (!(window._boardImg && window._boardImg.complete && window._boardImg.naturalWidth > 0)) {
+    drawLines();
+  }
   drawEscape();
   drawAIHintLine();
   drawPlayerHint();
@@ -2430,24 +2469,27 @@ function render(ts) {
 }
 
 function drawLines() {
+  ctx.lineCap = 'round';
   for (let a = 0; a < 25; a++) {
     for (const b of GRAPH[a]) {
       if (b <= a) continue;
       const pa = nxy(a), pb = nxy(b);
       const diag = Math.abs(nR(b)-nR(a))===1 && Math.abs(nC(b)-nC(a))===1;
 
-      // Carved groove
-      ctx.beginPath(); ctx.moveTo(pa.x, pa.y); ctx.lineTo(pb.x, pb.y);
-      ctx.strokeStyle = diag ? 'rgba(0,0,0,0.38)' : 'rgba(0,0,0,0.50)';
-      ctx.lineWidth   = diag ? 0.9 : 1.3;
+      // Groove base — deep dark cut
+      ctx.beginPath();
+      ctx.moveTo(pa.x, pa.y);
+      ctx.lineTo(pb.x, pb.y);
+      ctx.strokeStyle = diag ? 'rgba(6,3,1,0.80)' : 'rgba(6,3,1,0.90)';
+      ctx.lineWidth   = diag ? 2.0 : 2.6;
       ctx.stroke();
 
-      // Highlight above groove (chiselled look)
+      // Chiselled highlight — tight warm edge above groove
       ctx.beginPath();
-      ctx.moveTo(pa.x - 0.5, pa.y - 0.5);
-      ctx.lineTo(pb.x - 0.5, pb.y - 0.5);
-      ctx.strokeStyle = diag ? 'rgba(160,120,70,0.06)' : 'rgba(160,120,70,0.10)';
-      ctx.lineWidth   = 0.5;
+      ctx.moveTo(pa.x - 0.6, pa.y - 0.6);
+      ctx.lineTo(pb.x - 0.6, pb.y - 0.6);
+      ctx.strokeStyle = diag ? 'rgba(160,110,50,0.28)' : 'rgba(160,110,50,0.48)';
+      ctx.lineWidth   = diag ? 0.8 : 1.1;
       ctx.stroke();
     }
   }
@@ -2563,9 +2605,8 @@ function drawMovableGoatHints() {
 
 
 function drawNodeDots() {
-  const r = Math.max(2.8, cell * 0.075);
+  const r = Math.max(1.6, cell * 0.038);
   const corners  = [0, 4, 20, 24];
-  const edgeMids = [2, 10, 14, 22];
   const center   = 12;
 
   for (let n = 0; n < 25; n++) {
@@ -2573,22 +2614,16 @@ function drawNodeDots() {
 
     if (n === center) {
       const pulse = 0.5 + 0.5 * Math.sin(animT * 0.002);
-      const gc = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r*2.2);
-      gc.addColorStop(0, `rgba(200,130,40,${0.55+pulse*0.35})`);
-      gc.addColorStop(1, 'rgba(200,130,40,0)');
-      ctx.fillStyle = gc;
-      ctx.beginPath(); ctx.arc(p.x, p.y, r*2.2, 0, Math.PI*2); ctx.fill();
-      ctx.beginPath(); ctx.arc(p.x, p.y, r*(1.3+pulse*0.15), 0, Math.PI*2);
-      ctx.fillStyle = `rgba(200,140,60,${0.7+pulse*0.3})`; ctx.fill();
+      ctx.beginPath(); ctx.arc(p.x, p.y, r * (1.1 + pulse * 0.08), 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(180,120,40,${0.18 + pulse * 0.10})`; ctx.fill();
 
     } else if (corners.includes(n)) {
-      ctx.fillStyle = 'rgba(120,80,35,0.8)';
-      ctx.fillRect(p.x - 2.2, p.y - 2.2, 4.4, 4.4);
+      ctx.fillStyle = 'rgba(100,65,28,0.22)';
+      ctx.fillRect(p.x - r, p.y - r, r * 2, r * 2);
 
     } else {
-      const isEdgeMid = edgeMids.includes(n);
-      ctx.beginPath(); ctx.arc(p.x, p.y, isEdgeMid ? r*1.18 : r, 0, Math.PI*2);
-      ctx.fillStyle = 'rgba(100,65,30,0.75)'; ctx.fill();
+      ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(90,55,22,0.20)'; ctx.fill();
     }
   }
 }
@@ -2669,6 +2704,7 @@ function drawTiger() {
     const r = cell * 0.42;
     const beat = 0.5 + 0.5 * Math.sin(animT * 0.0028);
     const isTigerPlayer = (S.mode === 'tiger');
+    const hasImg = window._tigerPieceImg && window._tigerPieceImg.complete && window._tigerPieceImg.naturalWidth > 0;
 
     // Ambient glow
     const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r * 2.8);
@@ -2677,26 +2713,31 @@ function drawTiger() {
     ctx.fillStyle = g;
     ctx.beginPath(); ctx.arc(p.x, p.y, r*2.8, 0, Math.PI*2); ctx.fill();
 
-    // Player selection ring
-    if (isTigerPlayer) {
-      ctx.beginPath(); trilat(p.x, p.y, r+4+2*beat);
-      ctx.strokeStyle = `rgba(255,212,60,${0.5+0.3*beat})`;
-      ctx.lineWidth = 2; ctx.stroke();
-    }
-
-    if (window._tigerPieceImg && window._tigerPieceImg.complete && window._tigerPieceImg.naturalWidth > 0) {
+    if (hasImg) {
       ctx.save();
       ctx.shadowColor = 'rgba(0,0,0,0.60)';
       ctx.shadowBlur = 10;
       ctx.shadowOffsetY = 4;
-      // Use natural aspect ratio to avoid stretching (409×353, ratio≈1.16 — wider than tall)
       const tRatio = window._tigerPieceImg.naturalWidth / window._tigerPieceImg.naturalHeight;
-      const tW = r * 2;           // full width
-      const tH = tW / tRatio;     // correct height (narrower)
+      const tW = r * 2;
+      const tH = tW / tRatio;
       ctx.drawImage(window._tigerPieceImg, p.x - tW/2, p.y - tH/2, tW, tH);
       ctx.restore();
+
+      // Circle ring drawn on top of image — always centered correctly
+      if (isTigerPlayer) {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, r * (1.18 + 0.07 * beat), 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(255,212,60,${0.55+0.3*beat})`;
+        ctx.lineWidth = 2.5; ctx.stroke();
+      }
     } else {
-      // Fallback: original triangle
+      // Fallback: drawn triangle + trilat ring
+      if (isTigerPlayer) {
+        ctx.beginPath(); trilat(p.x, p.y, r * (1.18 + 0.08 * beat));
+        ctx.strokeStyle = `rgba(255,212,60,${0.5+0.3*beat})`;
+        ctx.lineWidth = 2; ctx.stroke();
+      }
       ctx.save(); ctx.translate(p.x+1.5, p.y+2.5); trilat(0,0,r*1.06);
       ctx.fillStyle='rgba(0,0,0,.36)'; ctx.fill(); ctx.restore();
       ctx.save(); ctx.translate(p.x, p.y); trilat(0,0,r);
