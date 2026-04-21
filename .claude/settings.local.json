@@ -1,0 +1,61 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(*)",
+      "Edit(*)",
+      "Write(*)",
+      "Glob(*)",
+      "Grep(*)",
+      "Bash(node:*)",
+      "Bash(npm:*)",
+      "Bash(npx:*)",
+      "Bash(git status)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git restore:*)",
+      "Bash(git stash:*)",
+      "Bash(git branch:*)",
+      "Bash(git checkout:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(wc:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(sed:*)",
+      "Bash(awk:*)",
+      "Bash(mkdir:*)",
+      "Bash(touch:*)",
+      "Bash(cp:*)",
+      "Bash(mv:*)",
+      "Bash(diff:*)",
+      "Bash(pwd)",
+      "Bash(echo:*)",
+      "Bash(python3 -c ' *)",
+      "Bash(python3 -c \"from PIL import Image; img = Image.open\\('/c/Users/Sagar/OneDrive/Desktop/Plan/Phase1/tigertrap/tigertrap/tigertrap/assets/bg/stone-bg.jpg'\\); print\\(img.size\\)\")",
+      "Bash(identify \"/c/Users/Sagar/OneDrive/Desktop/Plan/Phase1/tigertrap/tigertrap/tigertrap/assets/bg/stone-bg.jpg\")"
+    ],
+    "deny": [
+      "Bash(sudo:*)",
+      "Bash(rm -rf /*)",
+      "Bash(rm -rf ~*)"
+    ],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(git reset:*)",
+      "Bash(git rebase:*)",
+      "Bash(rm:*)",
+      "Bash(rmdir:*)",
+      "Bash(npm publish:*)",
+      "Bash(curl:*)",
+      "Bash(wget:*)"
+    ]
+  },
+  "_comment": "Drop this at .claude/settings.local.json in your tigertrap project root. settings.local.json is gitignored by Claude Code by default — your personal allow list, not committed. Pre-approves the bash commands Claude will need most often during Phase 2 work so you don't get prompted for every grep, every node audit, every git status.",
+  "defaultMode": "acceptEdits"
+}

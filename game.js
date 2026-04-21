@@ -1252,29 +1252,44 @@ function _startTutAnim(segments) {
 
 // -- Tutorial board renderer (animated) -----------------------
 function _drawTutFrame(canvas, board, gp, glideT, flashNode) {
-  const BSPC = canvas.width;
+  const _dpr = window.devicePixelRatio || 1;
   const cx   = canvas.getContext('2d');
+  cx.setTransform(_dpr, 0, 0, _dpr, 0, 0);
+  const BSPC = canvas.width / _dpr;
   const mg   = BSPC * 0.11;
   const cel  = (BSPC - 2*mg) / 4;
   const nxy  = n => ({ x: mg+(n%5)*cel, y: mg+Math.floor(n/5)*cel });
 
-  // Background
-  const bg = cx.createRadialGradient(BSPC/2,BSPC/2,0,BSPC/2,BSPC/2,BSPC*.72);
-  bg.addColorStop(0,'#1E1508'); bg.addColorStop(1,'#120D07');
-  cx.fillStyle=bg; cx.fillRect(0,0,BSPC,BSPC);
+  // Background — board stone image or gradient fallback
+  if (window._boardImg && window._boardImg.complete && window._boardImg.naturalWidth > 0) {
+    cx.drawImage(window._boardImg, 0, 0, BSPC, BSPC);
+    const vig = cx.createRadialGradient(BSPC/2, BSPC/2, BSPC*0.15, BSPC/2, BSPC/2, BSPC*0.72);
+    vig.addColorStop(0, 'rgba(0,0,0,0.08)'); vig.addColorStop(1, 'rgba(0,0,0,0.45)');
+    cx.fillStyle = vig; cx.fillRect(0, 0, BSPC, BSPC);
+  } else {
+    const bg = cx.createRadialGradient(BSPC/2,BSPC/2,0,BSPC/2,BSPC/2,BSPC*.72);
+    bg.addColorStop(0,'#1E1508'); bg.addColorStop(1,'#120D07');
+    cx.fillStyle=bg; cx.fillRect(0,0,BSPC,BSPC);
+  }
 
-  // Lines
+  // Lines — two-pass carved-groove
   for (let a=0;a<25;a++) for (const b of GRAPH[a]) {
     if (b<=a) continue;
     const pa=nxy(a),pb=nxy(b);
-    const d=Math.abs(Math.floor(b/5)-Math.floor(a/5))===1&&Math.abs(b%5-a%5)===1;
+    const diag=Math.abs(Math.floor(b/5)-Math.floor(a/5))===1&&Math.abs(b%5-a%5)===1;
     cx.beginPath(); cx.moveTo(pa.x,pa.y); cx.lineTo(pb.x,pb.y);
-    cx.strokeStyle=d?'#261A0A':'#382815'; cx.lineWidth=d?0.9:1.3; cx.stroke();
+    cx.strokeStyle=diag?'rgba(0,0,0,0.72)':'rgba(0,0,0,0.82)';
+    cx.lineWidth=diag?1.2:1.6; cx.stroke();
+    cx.beginPath(); cx.moveTo(pa.x-0.5,pa.y-0.5); cx.lineTo(pb.x-0.5,pb.y-0.5);
+    cx.strokeStyle=diag?'rgba(160,120,70,0.10)':'rgba(160,120,70,0.16)';
+    cx.lineWidth=0.6; cx.stroke();
   }
-  // Node dots
+  // Node dots — uniform stone dots scaled to canvas
+  const _tutDotR = Math.max(2, cel * 0.065);
   for (let n=0;n<25;n++) {
-    const p=nxy(n); cx.beginPath(); cx.arc(p.x,p.y,Math.max(2,cel*.06),0,Math.PI*2);
-    cx.fillStyle='#4A3218'; cx.fill();
+    const p=nxy(n);
+    cx.beginPath(); cx.arc(p.x,p.y,_tutDotR,0,Math.PI*2);
+    cx.fillStyle='rgba(100,65,30,0.75)'; cx.fill();
   }
   // Escape nodes
   if (board.escapeNodes) for (const n of board.escapeNodes) {
@@ -1320,11 +1335,7 @@ function _drawTutFrame(canvas, board, gp, glideT, flashNode) {
     if (n === skipGoat) continue;
     const p=nxy(n); const r=cel*.2; const sel=board.selected===n;
     if (sel) { cx.beginPath(); cx.arc(p.x,p.y,r+3.5,0,Math.PI*2); cx.strokeStyle='#FFD060'; cx.lineWidth=2; cx.stroke(); }
-    cx.beginPath(); cx.arc(p.x+.8,p.y+2,r,0,Math.PI*2); cx.fillStyle='rgba(0,0,0,.32)'; cx.fill();
-    cx.beginPath(); cx.arc(p.x,p.y,r,0,Math.PI*2);
-    cx.fillStyle=sel?'#FFF8E8':'#EDE0C4'; cx.fill();
-    cx.strokeStyle=sel?'#FFD060':'#A08050'; cx.lineWidth=1.4; cx.stroke();
-    cx.beginPath(); cx.arc(p.x,p.y,r*.28,0,Math.PI*2); cx.fillStyle='rgba(80,50,15,.25)'; cx.fill();
+    _drawTutGoatAt(cx, p.x, p.y, cel);
   }
   // Static tigers
   for (const n of (board.tigers||[])) {
@@ -1379,10 +1390,11 @@ function _drawTutTigerXY(cx, px, py, cel, isTigerPlayer, trapped) {
   grd.addColorStop(0, `rgba(232,135,26,${isTigerPlayer ? .35 : .22})`);
   grd.addColorStop(1, 'rgba(232,135,26,0)');
   cx.fillStyle = grd; cx.beginPath(); cx.arc(px,py,rad*2.7,0,Math.PI*2); cx.fill();
-  // Selection ring
+  // Selection ring — radius derived from piece size, no hardcoded offset
   if (isTigerPlayer) {
+    const or = rad * 1.15;
     cx.beginPath();
-    cx.moveTo(px, py-(rad+3)); cx.lineTo(px+(rad+3)*.866, py+(rad+3)*.5); cx.lineTo(px-(rad+3)*.866, py+(rad+3)*.5); cx.closePath();
+    cx.moveTo(px, py-or); cx.lineTo(px+or*.866, py+or*.5); cx.lineTo(px-or*.866, py+or*.5); cx.closePath();
     cx.strokeStyle='rgba(255,210,60,.55)'; cx.lineWidth=1.8; cx.stroke();
   }
   if (window._tigerPieceImg && window._tigerPieceImg.complete && window._tigerPieceImg.naturalWidth > 0) {
