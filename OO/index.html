@@ -1,0 +1,1650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>Over &amp; Out — Cricket Bluff</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- Firebase SDK (Multiplayer module only) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+/* ════════════════════════════════════════
+   DESIGN: IPL broadcast night — deep navy,
+   gold accents, Bebas Neue for scores,
+   Rajdhani for everything else.
+   ════════════════════════════════════════ */
+:root{
+  --bg:#060e1c;--surface:#0f1e35;--surface2:#162d4a;
+  --card-bg:#1a3358;--gold:#f0b429;--gold2:#c8921a;
+  --green:#00e676;--red:#ff5252;--blue:#4fc3f7;
+  --text:#e8ddd0;--dim:#7a8fa8;--border:#1e3354;
+  --chip:#f0b429;
+  --ff-d:'Bebas Neue',sans-serif;
+  --ff-b:'Rajdhani',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);font-family:var(--ff-b);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:
+  radial-gradient(ellipse 90% 40% at 50% 100%,#041a0a 0%,transparent 60%),
+  radial-gradient(ellipse 100% 60% at 50% 0%,#0b1e42 0%,#060e1c 70%);z-index:-1}
+#app{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
+/* ──── SCREENS ──── */
+.screen{flex:1;display:flex;flex-direction:column;padding:20px;animation:fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+/* ──── HOME ──── */
+.home-logo{text-align:center;padding:60px 0 20px}
+.game-title{font-family:var(--ff-d);font-size:80px;line-height:.85;color:var(--gold);
+  text-shadow:0 0 60px rgba(240,180,41,.35);letter-spacing:3px}
+.game-sub{font-size:13px;color:var(--dim);letter-spacing:4px;text-transform:uppercase;margin-top:10px}
+.divider-gold{width:60px;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:20px auto}
+/* ──── BUTTONS ──── */
+.btn{display:block;width:100%;padding:17px 20px;border:none;border-radius:14px;
+  font-family:var(--ff-b);font-size:19px;font-weight:700;cursor:pointer;
+  transition:all .13s ease;position:relative;letter-spacing:.5px}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.38;cursor:not-allowed}
+.btn+.btn{margin-top:11px}
+.btn-primary{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#100800}
+.btn-primary:hover{filter:brightness(1.08)}
+.btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+.btn-danger{background:linear-gradient(135deg,#ff5252,#c20000);color:#fff}
+.btn-success{background:linear-gradient(135deg,#00e676,#00a854);color:#001a08}
+.btn-sm{padding:12px 16px;font-size:16px;border-radius:11px}
+.btn-xs{padding:9px 12px;font-size:14px;border-radius:9px}
+.btn-row{display:flex;gap:9px}
+.btn-row .btn{flex:1;margin-top:0}
+/* ──── INPUT ──── */
+.inp{width:100%;padding:14px 16px;background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;color:var(--text);font-family:var(--ff-b);font-size:18px;font-weight:600;
+  outline:none;margin-bottom:12px}
+.inp:focus{border-color:var(--gold)}
+.inp::placeholder{color:var(--dim)}
+/* ──── SCOREBOARD ──── */
+.scoreboard{background:rgba(6,14,28,.93);border-bottom:1px solid var(--border);
+  padding:10px 16px;position:sticky;top:0;z-index:100;backdrop-filter:blur(10px)}
+.sb-row{display:flex;justify-content:space-between;align-items:center}
+.sb-player{text-align:center;flex:1}
+.sb-runs{font-family:var(--ff-d);font-size:38px;color:var(--gold);line-height:1}
+.sb-wkts{font-size:12px;color:var(--dim)}
+.sb-name{font-size:11px;color:var(--dim);font-weight:600;letter-spacing:1px;text-transform:uppercase}
+.sb-mid{padding:0 12px;text-align:center}
+.sb-over{font-family:var(--ff-d);font-size:22px;color:var(--dim)}
+.sb-over-lbl{font-size:9px;color:var(--dim);text-transform:uppercase}
+.ball-tracker{display:flex;gap:5px;justify-content:center;padding:6px 0 2px}
+.bd{width:10px;height:10px;border-radius:50%;border:1.5px solid var(--dim)}
+.bd.cur{background:var(--gold);border-color:var(--gold)}
+.bd.run{background:var(--green);border-color:var(--green)}
+.bd.wkt{background:var(--red);border-color:var(--red)}
+.bd.dot{background:var(--dim)}
+/* ──── CARDS ──── */
+.card-slot{perspective:700px;width:115px;height:165px;flex-shrink:0}
+.card-inner{width:100%;height:100%;position:relative;transform-style:preserve-3d;
+  transition:transform .65s cubic-bezier(.34,1.3,.64,1)}
+.card-inner.flipped{transform:rotateY(180deg)}
+.c-back,.c-front{position:absolute;width:100%;height:100%;backface-visibility:hidden;
+  border-radius:12px;border:1.5px solid var(--border);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;overflow:hidden}
+.c-back{background:var(--card-bg)}
+.c-back::before{content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(45deg,rgba(255,255,255,.02) 0,rgba(255,255,255,.02) 1px,transparent 1px,transparent 8px)}
+.c-front{transform:rotateY(180deg);padding:10px 8px;
+  background:linear-gradient(155deg,#1c3560 0%,#0f2040 100%);border-color:var(--gold)}
+.c-rating{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-family:var(--ff-d);font-size:19px;color:#100800;margin-bottom:5px}
+.c-name{font-size:11.5px;font-weight:700;color:var(--text);text-align:center;line-height:1.2}
+.c-nick{font-size:9.5px;color:var(--gold);text-align:center;margin-top:2px}
+.c-special{font-size:8.5px;padding:2px 6px;border-radius:5px;margin-top:5px;text-align:center;line-height:1.3}
+.c-sp-on{background:rgba(0,230,118,.12);color:var(--green)}
+.c-sp-off{background:rgba(255,255,255,.06);color:var(--dim)}
+.c-type{font-size:8px;padding:2px 7px;border-radius:20px;margin-top:4px;font-weight:700}
+.t-bat{background:rgba(0,230,118,.15);color:var(--green)}
+.t-bowl{background:rgba(255,82,82,.15);color:var(--red)}
+/* ──── DICE ──── */
+.dice-area{display:flex;justify-content:center;gap:32px;padding:8px 0}
+.dice-wrap{display:flex;flex-direction:column;align-items:center;gap:5px}
+.dice{width:58px;height:58px;background:#f5ede0;border-radius:12px;display:flex;
+  align-items:center;justify-content:center;font-size:38px;
+  box-shadow:0 4px 16px rgba(0,0,0,.5),inset 0 1px 2px rgba(255,255,255,.6)}
+.dice.rolling{animation:dShake .08s linear infinite}
+@keyframes dShake{0%{transform:rotate(-6deg) scale(1.06)}50%{transform:rotate(6deg) scale(.95)}100%{transform:rotate(-6deg) scale(1.06)}}
+.dice-lbl{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:1px}
+/* ──── POT / CHIPS ──── */
+.pot-area{display:flex;flex-direction:column;align-items:center;gap:5px}
+.pot-lbl{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1px}
+.pot-val{font-family:var(--ff-d);font-size:30px;color:var(--chip)}
+.chip-pile{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;max-width:200px}
+.chip{width:22px;height:22px;border-radius:50%;
+  background:radial-gradient(circle at 35% 35%,#ffd740,var(--chip));
+  box-shadow:0 2px 5px rgba(0,0,0,.45);border:1.5px solid #a06e00;
+  animation:chipIn .25s ease}
+@keyframes chipIn{from{transform:translateY(-16px) scale(.4);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}
+/* ──── COMMENTARY ──── */
+.commentary{text-align:center;padding:12px 16px;border-radius:12px;
+  background:rgba(15,30,53,.75);border:1px solid var(--border);min-height:56px;
+  display:flex;align-items:center;justify-content:center}
+.commentary-text{font-size:17px;font-weight:600;animation:cIn .4s ease}
+@keyframes cIn{from{opacity:0;transform:scale(.88)}to{opacity:1;transform:scale(1)}}
+/* ──── OUTCOME BADGE ──── */
+.ob{display:inline-block;padding:8px 22px;border-radius:40px;
+  font-family:var(--ff-d);font-size:30px;letter-spacing:.5px;
+  animation:obIn .3s cubic-bezier(.34,1.56,.64,1)}
+@keyframes obIn{from{transform:scale(.2) rotate(-12deg);opacity:0}to{transform:scale(1) rotate(0);opacity:1}}
+.ob-six{background:linear-gradient(135deg,#ffd700,#ff8c00);color:#1a0800}
+.ob-four{background:linear-gradient(135deg,#00e676,#00a854);color:#001a08}
+.ob-two{background:rgba(79,195,247,.25);color:var(--blue);border:1px solid var(--blue)}
+.ob-one{background:rgba(255,255,255,.1);color:var(--text);border:1px solid var(--border)}
+.ob-dot{background:rgba(120,140,170,.15);color:var(--dim);border:1px solid var(--border)}
+.ob-pressure{background:rgba(255,152,0,.2);color:#ff9800;border:1px solid #ff9800}
+.ob-wicket{background:linear-gradient(135deg,#ff5252,#c20000);color:#fff}
+/* ──── CARD GRID ──── */
+.card-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;
+  overflow-y:auto;padding:12px;flex:1}
+.cg-item{background:var(--surface);border:2px solid var(--border);border-radius:12px;
+  padding:11px;cursor:pointer;transition:all .12s;position:relative}
+.cg-item.selected{border-color:var(--gold);background:rgba(240,180,41,.1)}
+.cg-item.locked{opacity:.38;cursor:not-allowed;pointer-events:none}
+.cg-name{font-size:14px;font-weight:700}
+.cg-nick{font-size:11px;color:var(--dim)}
+.cg-rat{font-family:var(--ff-d);font-size:22px}
+.cg-sp{font-size:10px;padding:2px 6px;border-radius:4px;background:rgba(255,255,255,.06);
+  color:var(--dim);margin-top:4px;display:inline-block}
+.cg-sp.impl{color:var(--green);background:rgba(0,230,118,.1)}
+/* ──── WAITING ──── */
+.wait-pulse{width:70px;height:70px;border-radius:50%;background:var(--gold);
+  opacity:.18;animation:pulse 1.6s ease infinite;margin:0 auto}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:.18}50%{transform:scale(1.35);opacity:.38}}
+.room-code{font-family:var(--ff-d);font-size:56px;color:var(--gold);letter-spacing:10px}
+.room-url{font-size:12px;color:var(--dim);word-break:break-all;text-align:center;
+  padding:8px;background:var(--surface);border-radius:8px;margin-top:6px}
+/* ──── AI THINKING ──── */
+.ai-think{display:flex;align-items:center;gap:8px;color:var(--dim);font-size:15px}
+.think-dots{display:flex;gap:4px}
+.tdot{width:7px;height:7px;border-radius:50%;background:var(--dim);
+  animation:tb .55s ease infinite}
+.tdot:nth-child(2){animation-delay:.15s}
+.tdot:nth-child(3){animation-delay:.3s}
+@keyframes tb{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+/* ──── MISC ──── */
+.section-title{font-family:var(--ff-d);font-size:34px;color:var(--gold);margin-bottom:3px}
+.section-sub{font-size:14px;color:var(--dim);margin-bottom:20px}
+.card-wrap{display:flex;flex-direction:column;align-items:center;gap:8px}
+.card-lbl{font-size:11px;color:var(--dim);font-weight:700;letter-spacing:1px;text-transform:uppercase}
+.card-pname{font-size:11px;color:var(--dim)}
+.betting-area{padding:12px;background:rgba(6,14,28,.85);border-top:1px solid var(--border)}
+.bet-status{text-align:center;font-size:14px;color:var(--dim);margin-bottom:10px;font-weight:600}
+.chips-row{display:flex;justify-content:space-between;margin-bottom:12px;font-size:13px}
+.chips-val{font-family:var(--ff-d);font-size:21px;color:var(--chip)}
+.effects-log{font-size:11px;color:var(--gold);text-align:center;line-height:1.6}
+.innings-title{font-family:var(--ff-d);font-size:56px;color:var(--gold)}
+.final-box{background:var(--surface);border-radius:14px;padding:20px;margin:16px 0}
+/* ──── DIFF SELECTOR ──── */
+.diff-btn.active{border-color:var(--gold)!important;background:rgba(240,180,41,.1)!important}
+/* ──── SPECIAL INDICATOR ──── */
+.sp-indicator{display:inline-block;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:700}
+.sp-active{background:rgba(0,230,118,.2);color:var(--green);border:1px solid rgba(0,230,118,.4)}
+.sp-flavor{background:rgba(120,140,170,.1);color:var(--dim);border:1px solid rgba(120,140,170,.2)}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+'use strict';
+// ╔══════════════════════════════════════════════════════╗
+// ║  OVER & OUT — Single-file game                      ║
+// ║  Design doc: v0.3  |  Code: v0.1                   ║
+// ╚══════════════════════════════════════════════════════╝
+//
+// NOTE: Real player names are used for concept/prototype only.
+// For any public release, replace with archetype names or
+// acquire proper licensing (personality rights, Indian law).
+
+// ═══════════════════════════════════════════════════════
+// SECTION 1 — CARD DATA (60 cards: 30 batters, 30 bowlers)
+// ═══════════════════════════════════════════════════════
+const CARDS = {
+// ── BATTERS ──────────────────────────────────────────
+kohli:     {id:'kohli',     name:'Virat Kohli',       nick:'King Kohli',       type:'batter',rating:6,special:'anchor',           specialName:'Anchor',           specialDesc:'Re-roll any dice result of 1',                          impl:true},
+dhoni:     {id:'dhoni',     name:'MS Dhoni',           nick:'Captain Cool',     type:'batter',rating:6,special:'finisher',          specialName:'Finisher',         specialDesc:'+2 to your dice in the final over',                     impl:true},
+rohit:     {id:'rohit',     name:'Rohit Sharma',       nick:'Hitman',           type:'batter',rating:5,special:'big_hitter',        specialName:'Big Hitter',       specialDesc:'On a 6 roll, add +2 bonus runs',                        impl:true},
+gayle:     {id:'gayle',     name:'Chris Gayle',        nick:'Universe Boss',    type:'batter',rating:5,special:'range_hitter',      specialName:'Range Hitter',     specialDesc:'Sixes count as 7 runs',                                 impl:false},
+abdv:      {id:'abdv',      name:'AB de Villiers',     nick:'Mr 360',           type:'batter',rating:5,special:'rock_solid',        specialName:'Rock Solid',       specialDesc:'Wicket outcomes → Dot+pressure instead',                impl:false},
+sachin:    {id:'sachin',    name:'Sachin Tendulkar',   nick:'Master Blaster',   type:'batter',rating:4,special:'timing',            specialName:'Timing',           specialDesc:'You win all ties (0 diff → 2 runs)',                     impl:false},
+russell:   {id:'russell',   name:'Andre Russell',      nick:'Dre Russ',         type:'batter',rating:4,special:'power_surge',       specialName:'Power Surge',      specialDesc:'+1 on your first 3 balls of the match',                 impl:false},
+sehwag:    {id:'sehwag',    name:'Virender Sehwag',    nick:'Viru',             type:'batter',rating:4,special:'fast_starter',      specialName:'Fast Starter',     specialDesc:'+2 to dice in the first over only',                     impl:true},
+yuvraj:    {id:'yuvraj',    name:'Yuvraj Singh',       nick:'Yuvi',             type:'batter',rating:4,special:'counter_puncher',   specialName:'Counter-Puncher',  specialDesc:'+1 on ball after any wicket falls',                     impl:true},
+kp:        {id:'kp',        name:'Kevin Pietersen',    nick:'KP',               type:'batter',rating:4,special:'sweeper',           specialName:'Sweeper',          specialDesc:'Negates Spinner specials on opponent',                  impl:false},
+rahane:    {id:'rahane',    name:'Ajinkya Rahane',     nick:'Jinks',            type:'batter',rating:3,special:'experience',        specialName:'Experience',       specialDesc:"Once per match, peek at opponent's card",               impl:false},
+pant:      {id:'pant',      name:'Rishabh Pant',       nick:'Pantastic',        type:'batter',rating:3,special:'awkward_angle_b',   specialName:'Awkward Angle',    specialDesc:'Opp. bowler gets −1 unless specialist',                 impl:false},
+pandya:    {id:'pandya',    name:'Hardik Pandya',      nick:'Kung Fu Panda',    type:'batter',rating:3,special:'versatile_bat',     specialName:'Versatile',        specialDesc:'May be played as Rating-3 Bowler',                      impl:false},
+iyer:      {id:'iyer',      name:'Shreyas Iyer',       nick:'Sarpanch',         type:'batter',rating:3,special:'crowd_fav',         specialName:'Crowd Favorite',   specialDesc:'+1 when your team is behind on score',                  impl:false},
+maxwell:   {id:'maxwell',   name:'Glenn Maxwell',      nick:'Big Show',         type:'batter',rating:3,special:'risk_taker',        specialName:'Risk-Taker',       specialDesc:'+2 on 5/6 roll, −1 on 1/2 roll',                       impl:false},
+buttler:   {id:'buttler',   name:'Jos Buttler',        nick:'The Buttler',      type:'batter',rating:3,special:'quick_hands',       specialName:'Quick Hands',      specialDesc:'One free re-roll per match',                            impl:false},
+mccullum:  {id:'mccullum',  name:'Brendon McCullum',   nick:'Baz',              type:'batter',rating:3,special:'resilient',         specialName:'Resilient',        specialDesc:'+1 after losing previous ball',                         impl:false},
+klrahul:   {id:'klrahul',   name:'KL Rahul',           nick:'KL',               type:'batter',rating:2,special:'steady_eddie',      specialName:'Steady Eddie',     specialDesc:'Treat any dice roll of 1 as a 2',                       impl:true},
+gill:      {id:'gill',      name:'Shubman Gill',       nick:'Prince',           type:'batter',rating:2,special:'anti_pace',         specialName:'Anti-Pace',        specialDesc:'+2 vs Pace bowlers',                                    impl:false},
+warner:    {id:'warner',    name:'David Warner',       nick:'The Bull',         type:'batter',rating:2,special:'anti_spin',         specialName:'Anti-Spin',        specialDesc:'+2 vs Spin bowlers',                                    impl:false},
+jaiswal:   {id:'jaiswal',   name:'Yashasvi Jaiswal',   nick:'Yash',             type:'batter',rating:2,special:'floater',           specialName:'Floater',          specialDesc:'Choose +1 to your roll OR −1 to opponent',             impl:false},
+faf:       {id:'faf',       name:'Faf du Plessis',     nick:'Faf',              type:'batter',rating:2,special:'comfort_zone_b',    specialName:'Comfort Zone',     specialDesc:'+1 when chip stack is below 50',                        impl:false},
+tilak:     {id:'tilak',     name:'Tilak Varma',        nick:'Tilak',            type:'batter',rating:2,special:'fresh_legs',        specialName:'Fresh Legs',       specialDesc:'+1 if played in your first 3 balls',                    impl:false},
+sanju:     {id:'sanju',     name:'Sanju Samson',       nick:'Sanju',            type:'batter',rating:2,special:'powerplay_king',    specialName:'Powerplay King',   specialDesc:'+2 in first over, −1 in second',                        impl:false},
+klaasen:   {id:'klaasen',   name:'Heinrich Klaasen',   nick:'Klaas',            type:'batter',rating:2,special:'late_bloomer',      specialName:'Late Bloomer',     specialDesc:'+1 each over you stay in (max +3)',                     impl:false},
+bumrah_bat:{id:'bumrah_bat',name:'Jasprit Bumrah',     nick:'Boom Boom (bat)',  type:'batter',rating:1,special:'tail_ender',        specialName:'Tail-Ender',       specialDesc:'+3 on 6 roll, auto dot on 1 roll',                      impl:true},
+chahal_bat:{id:'chahal_bat',name:'Yuzvendra Chahal',   nick:'Yuzi (bat)',       type:'batter',rating:1,special:'nightwatchman',     specialName:'Nightwatchman',    specialDesc:'Cannot be dismissed on first ball (→ Dot)',             impl:false},
+padikkal:  {id:'padikkal',  name:'Devdutt Padikkal',   nick:'Padikkal',         type:'batter',rating:1,special:'underrated_b',     specialName:'Underrated',       specialDesc:"+2 if opponent's bowler is rated 4+",                   impl:false},
+parag:     {id:'parag',     name:'Riyan Parag',        nick:'Riyan',            type:'batter',rating:1,special:'twelfth_man',       specialName:'Twelfth Man',      specialDesc:'Once per match, swap with benched batter',              impl:false},
+sai:       {id:'sai',       name:'Sai Sudharsan',      nick:'Sai',              type:'batter',rating:1,special:'debutant',          specialName:'Debutant',         specialDesc:'Roll extra die; use the higher result',                 impl:false},
+// ── BOWLERS ──────────────────────────────────────────
+bumrah_bowl:{id:'bumrah_bowl',name:'Jasprit Bumrah',   nick:'Boom Boom',        type:'bowler',rating:6,special:'death_overs',       specialName:'Death Overs',      specialDesc:'+2 to dice in the final over',                          impl:true},
+narine:    {id:'narine',    name:'Sunil Narine',       nick:'The Mystery',      type:'bowler',rating:6,special:'unreadable',        specialName:'Unreadable',       specialDesc:'Opponent commits first; you reveal second',             impl:false},
+steyn:     {id:'steyn',     name:'Dale Steyn',         nick:'Steyn Gun',        type:'bowler',rating:5,special:'pace_demon',        specialName:'Pace Demon',       specialDesc:"On 5/6 roll, opponent loses 1 from their roll",         impl:true},
+ashwin:    {id:'ashwin',    name:'R. Ashwin',          nick:'Ash',              type:'bowler',rating:5,special:'variations',        specialName:'Variations',       specialDesc:'Once per over, declare rating as 3–6 before reveal',    impl:true},
+wasim:     {id:'wasim',     name:'Wasim Akram',        nick:'Sultan of Swing',  type:'bowler',rating:5,special:'strike_bowler',     specialName:'Strike Bowler',    specialDesc:'+2 to dice in the first over',                          impl:true},
+bhuvi:     {id:'bhuvi',     name:'Bhuvneshwar Kumar',  nick:'Bhuvi',            type:'bowler',rating:4,special:'swing_king',        specialName:'Swing King',       specialDesc:'+2 in first 3 balls of an innings',                     impl:false},
+malinga:   {id:'malinga',   name:'Lasith Malinga',     nick:'Slinga',           type:'bowler',rating:4,special:'death_spec',        specialName:'Death Specialist', specialDesc:'+2 in last 3 balls of an innings',                      impl:false},
+chahal_bowl:{id:'chahal_bowl',name:'Yuzvendra Chahal', nick:'Yuzi',             type:'bowler',rating:4,special:'googly',            specialName:'Googly',           specialDesc:'Ties become Wickets vs R1-3 batters',                   impl:false},
+harbhajan: {id:'harbhajan', name:'Harbhajan Singh',    nick:'Turbanator',       type:'bowler',rating:4,special:'carrom_ball',       specialName:'Carrom Ball',      specialDesc:'Negates Anti-Spin / +vs Spin specials',                 impl:false},
+boult:     {id:'boult',     name:'Trent Boult',        nick:'Bouty',            type:'bowler',rating:4,special:'awk_angle_bowl',    specialName:'Awkward Angle',    specialDesc:'Opp. batter gets −1 unless rated 4+',                  impl:false},
+siraj:     {id:'siraj',     name:'Mohammed Siraj',     nick:'Miyan Magic',      type:'bowler',rating:3,special:'field_up',          specialName:'Field Up',         specialDesc:'+2 in first over, no effect after',                     impl:false},
+mcgrath:   {id:'mcgrath',   name:'Glenn McGrath',      nick:'Pigeon',           type:'bowler',rating:3,special:'veteran',           specialName:'Veteran',          specialDesc:'Once per match, force opponent re-roll',                impl:false},
+jadeja:    {id:'jadeja',    name:'Ravindra Jadeja',    nick:'Sir Jadeja',       type:'bowler',rating:3,special:'versatile_bowl',    specialName:'Versatile',        specialDesc:'May be played as Rating-3 Batter',                      impl:false},
+kuldeep:   {id:'kuldeep',   name:'Kuldeep Yadav',      nick:'Kully',            type:'bowler',rating:3,special:'containing',        specialName:'Containing',       specialDesc:'If no wicket, opp scores at most 2 runs',               impl:false},
+cummins:   {id:'cummins',   name:'Pat Cummins',        nick:'Cummo',            type:'bowler',rating:3,special:'workhorse',         specialName:'Workhorse',        specialDesc:'+1 if already bowled 3+ balls this match',             impl:false},
+varun:     {id:'varun',     name:'Varun Chakravarthy', nick:'Mystery V',        type:'bowler',rating:3,special:'hard_to_pick',      specialName:'Hard to Pick',     specialDesc:'Opponent cannot use re-rolls this ball',                impl:false},
+fizz:      {id:'fizz',      name:'Mustafizur Rahman',  nick:'The Fizz',         type:'bowler',rating:3,special:'slower_ball',       specialName:'Slower-Ball',      specialDesc:'+2 vs Power Hitter archetypes',                         impl:false},
+umesh:     {id:'umesh',     name:'Umesh Yadav',        nick:'Umesh',            type:'bowler',rating:2,special:'line_length',       specialName:'Line & Length',    specialDesc:'Treat any roll of 1 as a 2',                            impl:false},
+broad:     {id:'broad',     name:'Stuart Broad',       nick:'Broady',           type:'bowler',rating:2,special:'net_bowler',        specialName:'Net Bowler',       specialDesc:"+2 if opponent's batter is rated 4+",                   impl:false},
+flintoff:  {id:'flintoff',  name:'Andrew Flintoff',    nick:'Freddie',          type:'bowler',rating:2,special:'lucky_break',       specialName:'Lucky Break',      specialDesc:'On a 6 roll, automatic Wicket regardless of math',      impl:false},
+khaleel:   {id:'khaleel',   name:'Khaleel Ahmed',      nick:'Khaleel',          type:'bowler',rating:2,special:'comfort_zone_bowl', specialName:'Comfort Zone',     specialDesc:"+1 when opponent's chip stack is above 100",            impl:false},
+bravo:     {id:'bravo',     name:'Dwayne Bravo',       nick:'DJ Bravo',         type:'bowler',rating:2,special:'cutter',            specialName:'Cutter Specialist',specialDesc:'+1 when no wicket has fallen this over',                impl:false},
+natarajan: {id:'natarajan', name:'T Natarajan',        nick:'Yorker King',      type:'bowler',rating:2,special:'yorker_apprentice', specialName:'Yorker Apprentice',specialDesc:'+1 in the final 2 balls of an over (balls 5–6)',        impl:true},
+piyush:    {id:'piyush',    name:'Piyush Chawla',      nick:'Piyush',           type:'bowler',rating:2,special:'spin_twin',         specialName:'Spin Twin',        specialDesc:'+1 if you played another Spinner previous ball',        impl:false},
+arshdeep:  {id:'arshdeep',  name:'Arshdeep Singh',     nick:'Arshu',            type:'bowler',rating:2,special:'pace_twin',         specialName:'Pace Twin',        specialDesc:'+1 if you played another Pacer previous ball',          impl:false},
+tushar:    {id:'tushar',    name:'Tushar Deshpande',   nick:'Tushar',           type:'bowler',rating:1,special:'surprise_elem',     specialName:'Surprise Element', specialDesc:'+2 if used after 4+ runs on previous ball',             impl:false},
+mukesh:    {id:'mukesh',    name:'Mukesh Kumar',       nick:'Mukesh',           type:'bowler',rating:1,special:'underdog',          specialName:'Underdog',         specialDesc:'+3 vs Rating-6 batters',                                impl:false},
+madhwal:   {id:'madhwal',   name:'Akash Madhwal',      nick:'Madhwal',          type:'bowler',rating:1,special:'wildcard',          specialName:'Wildcard',         specialDesc:'Roll extra die; use the higher result',                 impl:false},
+zampa:     {id:'zampa',     name:'Adam Zampa',         nick:'Zampa',            type:'bowler',rating:1,special:'one_trick',         specialName:'One-Trick',        specialDesc:'+3 vs first batter you face; +0 thereafter',           impl:false},
+mayank:    {id:'mayank',    name:'Mayank Yadav',       nick:'Express',          type:'bowler',rating:1,special:'phoenix',           specialName:'Phoenix',          specialDesc:'+2 on ball after a six is hit off you',                impl:false},
+};
+
+// Hardcoded XIs for v0 (collection meta is a v2 feature)
+// Player XI: 6 batters + 5 bowlers = 11 cards
+const PLAYER_XI = {
+  batters:['kohli','rohit','sehwag','russell','klrahul','bumrah_bat'],
+  bowlers:['bumrah_bowl','steyn','ashwin','siraj','natarajan'],
+};
+const AI_XI = {
+  batters:['dhoni','abdv','sachin','yuvraj','sanju','sai'],
+  bowlers:['narine','wasim','chahal_bowl','bhuvi','arshdeep'],
+};
+
+// Rating colours (1-6)
+const RCOL=['','#ff7043','#ff9800','#ffd740','#69f0ae','#40c4ff','#e040fb'];
+
+// ═══════════════════════════════════════════════════════
+// SECTION 2 — SPECIALS (12 implemented for v0)
+// Not-implemented specials show as "flavor only" in the UI.
+// ═══════════════════════════════════════════════════════
+// Each special fn returns modifier object.
+// Batter mods: { rollBonus, adjustedRoll, extraRuns, forceDot, shouldReroll }
+// Bowler mods: { rollBonus, opponentPenalty }
+
+const SPECIALS = {
+  // ── BATTER ────────────────────────────────────────
+  // Finisher: +2 dice in final over
+  finisher(roll, gs){ return {rollBonus: gs.over===2?2:0}; },
+
+  // Anchor: re-roll any 1
+  anchor(roll, gs){ return {shouldReroll: roll===1}; },
+
+  // Big Hitter: on 6 roll, +2 extra runs
+  big_hitter(roll, gs){ return {extraRuns: roll===6?2:0}; },
+
+  // Steady Eddie: treat 1 as 2
+  steady_eddie(roll, gs){ return {adjustedRoll: roll===1?2:roll}; },
+
+  // Fast Starter: +2 in first over only
+  fast_starter(roll, gs){ return {rollBonus: gs.over===1?2:0}; },
+
+  // Counter-Puncher: +1 on ball after wicket
+  counter_puncher(roll, gs){ return {rollBonus: gs.lastBallWasWicket?1:0}; },
+
+  // Tail-Ender: +3 on 6 roll, force dot on 1
+  tail_ender(roll, gs){
+    if(roll===6) return {rollBonus:3};
+    if(roll===1) return {forceDot:true};
+    return {};
+  },
+
+  // ── BOWLER ────────────────────────────────────────
+  // Death Overs: +2 in final over
+  death_overs(roll, gs){ return {rollBonus: gs.over===2?2:0}; },
+
+  // Strike Bowler: +2 in first over
+  strike_bowler(roll, gs){ return {rollBonus: gs.over===1?2:0}; },
+
+  // Yorker Apprentice: +1 in final 2 balls of over (balls 5–6)
+  yorker_apprentice(roll, gs){ return {rollBonus: gs.ballInOver>=5?1:0}; },
+
+  // Pace Demon: on 5/6 roll, opponent loses 1
+  pace_demon(roll, gs){ return {opponentPenalty: roll>=5?1:0}; },
+
+  // Variations: rating override is applied BEFORE this fn; no roll modifier needed
+  variations(roll, gs){ return {}; },
+};
+
+// ═══════════════════════════════════════════════════════
+// SECTION 3 — GAME ENGINE (pure functions, no DOM)
+// ═══════════════════════════════════════════════════════
+const GE = {
+  // Resolution table (Batter total − Bowler total)
+  resolve(diff){
+    if(diff>=5)  return {outcome:'six',     runs:6,  potTo:'batter'};
+    if(diff>=3)  return {outcome:'four',    runs:4,  potTo:'batter'};
+    if(diff>=1)  return {outcome:'two',     runs:2,  potTo:'batter'};
+    if(diff===0) return {outcome:'one',     runs:1,  potTo:'batter'};
+    if(diff>=-2) return {outcome:'dot',     runs:0,  potTo:'bowler'};
+    if(diff>=-4) return {outcome:'pressure',runs:0,  potTo:'bowler', pressure:true};
+    return            {outcome:'wicket',  runs:0,  potTo:'bowler', wicket:true};
+  },
+
+  // Apply batter special → { effectiveRoll, extraRuns, forceDot, shouldReroll }
+  applyBatterSpecial(card, roll, gs){
+    const base = {effectiveRoll:roll, extraRuns:0, forceDot:false, shouldReroll:false};
+    if(!card || !card.impl || !SPECIALS[card.special]) return base;
+    const m = SPECIALS[card.special](roll, gs);
+    let r = m.adjustedRoll!==undefined ? m.adjustedRoll : roll;
+    r = Math.max(1, Math.min(8, r + (m.rollBonus||0)));
+    return {effectiveRoll:r, extraRuns:m.extraRuns||0,
+            forceDot:m.forceDot||false, shouldReroll:m.shouldReroll||false};
+  },
+
+  // Apply bowler special → { effectiveRoll, opponentPenalty }
+  applyBowlerSpecial(card, roll, gs){
+    const base = {effectiveRoll:roll, opponentPenalty:0};
+    if(!card || !card.impl || !SPECIALS[card.special]) return base;
+    const m = SPECIALS[card.special](roll, gs);
+    return {effectiveRoll: Math.max(1, Math.min(8, roll+(m.rollBonus||0))),
+            opponentPenalty: m.opponentPenalty||0};
+  },
+
+  getAvailableBatters(ps){
+    return ps.batters.filter(id=>
+      !ps.dismissedBatters.includes(id) && !ps.recentBatters.includes(id));
+  },
+  getAvailableBowlers(ps){
+    return ps.bowlers.filter(id=> !ps.recentBowlers.includes(id));
+  },
+
+  // Lockout queue: after playing, card can't be used for next 3 plays of same type
+  pushLockout(q, id){ return [id,...q].slice(0,3); },
+
+  fmtOver(over,ball){ return `${over-1}.${ball-1}`; },
+};
+
+// ═══════════════════════════════════════════════════════
+// SECTION 4 — COMMENTARY LINES (5+ per outcome)
+// ═══════════════════════════════════════════════════════
+const CMT = {
+  six:['BANG! Into the stands — SIX!','Maximum! The crowd goes WILD!',
+    'SMASHED over the ropes — SIX!','Gone! Into the night sky — SIX!',
+    'That is absolutely HUGE! Six!','Into the stands for the MAXIMUM!'],
+  four:['Racing to the boundary — FOUR!','Cracking shot! Four runs!',
+    'Pierced the field perfectly — FOUR!','Off the sweet spot — FOUR!',
+    'Down the ground for a lovely boundary!','Through the gap for four!'],
+  two:['Good running! They grab two.','Placed into the gap for a couple.',
+    'Two runs — keeps the momentum going.','Smart cricket — two runs added.',
+    'Worked into the leg side for two.'],
+  one:['Nudged away for a single.','Rotates the strike — one run.',
+    'Clever placement for the single.','One run, scoreboard ticking.',
+    'Dabbed away for one.'],
+  dot:['Dot ball! Tidy from the bowler.','Defended solidly. No run.',
+    'Kept quiet — dot ball.','Good delivery, nothing doing.',
+    'Excellent pressure — no run given!'],
+  pressure:['DOT + PRESSURE! The bowler is in control!','Brilliant delivery — pressure point!',
+    'The batter is feeling it — pressure building!','Dominant bowling — pressure point accumulated!',
+    'The bowler dictating terms — PRESSURE!'],
+  wicket:['WICKET!! The stumps shatter!','OUT! What a delivery!',
+    'BOWLED! Through the gate!','CAUGHT! That\'s the end!','GONE! Trudges back.',
+    'Absolutely unplayable — WICKET!'],
+  fold_bat:['The batter FOLDS! Nerve failure!','Couldn\'t take the heat — wicket conceded!',
+    'The pressure was too much — folded!','The batter backed down!'],
+  fold_bowl:['The bowler FOLDS! Boundary awarded!','Backed away — FOUR for bravery!',
+    'The bowler blinked first!','Caved in — batter takes the pot!'],
+};
+function rnd(k){ const a=CMT[k]; return a?a[Math.floor(Math.random()*a.length)]:''; }
+
+// ═══════════════════════════════════════════════════════
+// SECTION 5 — AI MODULE (pure logic, no DOM access)
+// Per spec §7.2: Easy/Hard are stubs; Medium is fully implemented.
+// ═══════════════════════════════════════════════════════
+const AI = {
+  makeDecision(gs, diff, myRole){
+    const isBat = gs.battingPlayer===myRole;
+    const ps = gs[myRole];
+    const avail = isBat ? GE.getAvailableBatters(ps) : GE.getAvailableBowlers(ps);
+    if(!avail.length) return {cardId:null, betAction:'pass', raiseAmount:0};
+    switch(diff){
+      case 'easy': return this._easy(avail);
+      case 'hard':  return this._hard(avail, gs, myRole, isBat);
+      default:      return this._medium(avail, gs, myRole, isBat);
+    }
+  },
+
+  respondToRaise(gs, diff, myRole, raiseAmt){
+    const cardKey = myRole==='p1'?'p1CardId':'p2CardId';
+    const card = CARDS[gs.currentBall[cardKey]];
+    const ps = gs[myRole];
+    if(!card || ps.chips < raiseAmt) return 'fold';
+    if(diff==='easy') return 'call';
+    if(diff==='medium'){
+      if(card.rating<=2 && Math.random()<.4) return 'fold';
+      if(card.rating>=5 && Math.random()<.25) return 'reraise';
+      return 'call';
+    }
+    // hard stub: same as medium + more aggression
+    if(card.rating<=2 && Math.random()<.55) return 'fold';
+    if(card.rating>=5 && Math.random()<.4) return 'reraise';
+    return 'call';
+  },
+
+  decideVariations(){ return 6; }, // AI always picks max
+
+  _easy(avail){ return {cardId:avail[Math.floor(Math.random()*avail.length)], betAction:'pass', raiseAmount:0}; },
+
+  _medium(avail, gs, myRole, isBat){
+    const cardId = this._pick(avail, gs, myRole, isBat);
+    const card = CARDS[cardId];
+    let betAction='pass', raiseAmount=0;
+    // Raise ~30% when strong card
+    if(card && card.rating>=5 && Math.random()<.3){
+      betAction='raise';
+      raiseAmount=[5,10,20][Math.floor(Math.random()*3)];
+      if(gs[myRole].chips < raiseAmount) raiseAmount=5;
+    }
+    return {cardId, betAction, raiseAmount};
+  },
+
+  _hard(avail, gs, myRole, isBat){
+    // Stub: medium + 15% bluff raise (see §7.2 for full hard spec)
+    const r = this._medium(avail, gs, myRole, isBat);
+    if(r.betAction==='pass' && Math.random()<.15 && gs[myRole].chips>=5){
+      r.betAction='raise'; r.raiseAmount=5;
+    }
+    return r;
+  },
+
+  _pick(avail, gs, myRole, isBat){
+    const op = myRole==='p1'?'p2':'p1';
+    const cards = avail.map(id=>CARDS[id]).filter(Boolean).sort((a,b)=>b.rating-a.rating);
+    // Situational picks
+    if(!isBat){
+      if(gs.over===2){ const d=cards.find(c=>c.special==='death_overs'); if(d) return d.id; }
+      if(gs.over===1){ const s=cards.find(c=>c.special==='strike_bowler'); if(s) return s.id; }
+    }
+    if(isBat && gs[myRole].runs < gs[op].runs) return cards[0].id;
+    return cards[Math.min(1,cards.length-1)].id;
+  },
+};
+
+// ═══════════════════════════════════════════════════════
+// SECTION 6 — MULTIPLAYER MODULE (Firebase wrapper)
+// Isolates all Firebase/sync code from the rest of the app.
+// The game logic never calls Multiplayer directly.
+// ═══════════════════════════════════════════════════════
+const MP = {
+  db:null, roomCode:null, myRole:null, _pendingCard:null,
+
+  // ── TODO: Paste your Firebase config here ─────────
+  // 1. Go to console.firebase.google.com
+  // 2. Create project → Add app (Web)
+  // 3. Enable Realtime Database in test mode
+  // 4. Copy the config object below and replace these placeholders
+  firebaseConfig:{
+    apiKey:            'YOUR_API_KEY',
+    authDomain:        'YOUR_PROJECT_ID.firebaseapp.com',
+    databaseURL:       'https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com',
+    projectId:         'YOUR_PROJECT_ID',
+    storageBucket:     'YOUR_PROJECT_ID.appspot.com',
+    messagingSenderId: 'YOUR_SENDER_ID',
+    appId:             'YOUR_APP_ID',
+  },
+  // ─────────────────────────────────────────────────
+
+  init(){
+    try{
+      if(typeof firebase==='undefined') return false;
+      if(!firebase.apps.length) firebase.initializeApp(this.firebaseConfig);
+      this.db=firebase.database(); return true;
+    }catch(e){ console.warn('Firebase init:',e); return false; }
+  },
+
+  genCode(){
+    const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no ambiguous chars
+    return Array.from({length:6},()=>c[Math.floor(Math.random()*c.length)]).join('');
+  },
+
+  async createRoom(name){
+    if(!this.db) return null;
+    const code=this.genCode(); this.roomCode=code; this.myRole='p1';
+    await this.db.ref(`rooms/${code}`).set({
+      status:'waiting',
+      players:{p1:{name,chips:100,joined:true}},
+      score:{p1Runs:0,p2Runs:0,p1Wickets:0,p2Wickets:0,ballsRemaining:12},
+      log:[],createdAt:Date.now(),
+    });
+    return code;
+  },
+
+  async joinRoom(code,name){
+    if(!this.db) return false;
+    code=code.toUpperCase(); this.roomCode=code; this.myRole='p2';
+    await this.db.ref(`rooms/${code}/players/p2`).set({name,chips:100,joined:true});
+    await this.db.ref(`rooms/${code}/status`).set('playing');
+    return true;
+  },
+
+  async publishState(update){
+    if(!this.db||!this.roomCode) return;
+    await this.db.ref(`rooms/${this.roomCode}`).update(update);
+  },
+
+  subscribeState(cb){
+    if(!this.db||!this.roomCode) return;
+    this.db.ref(`rooms/${this.roomCode}`).on('value',s=>{ const d=s.val(); if(d) cb(d); });
+  },
+
+  // Commit-reveal pattern:
+  // Step 1 — write committed:true (card hidden)
+  // Step 2 — write cardId only after both committed
+  async commitCard(cardId){
+    this._pendingCard=cardId;
+    await this.db.ref(`rooms/${this.roomCode}/currentBall/${this.myRole}Committed`).set(true);
+  },
+  async revealCard(){
+    await this.db.ref(`rooms/${this.roomCode}/currentBall/${this.myRole}CardId`).set(this._pendingCard);
+  },
+
+  // RULE: Bowler client rolls both dice (trust-based for friend play; move to server fn in v1)
+  async rollDice(bDice,wDice){
+    await this.db.ref(`rooms/${this.roomCode}/currentBall`).update({batterDice:bDice,bowlerDice:wDice});
+  },
+
+  unsubscribe(){
+    if(this.db&&this.roomCode) this.db.ref(`rooms/${this.roomCode}`).off();
+  },
+};
+
+// ═══════════════════════════════════════════════════════
+// SECTION 7 — GAME STATE
+// ═══════════════════════════════════════════════════════
+let S = {
+  appPhase:'home',  // home|setup_single|setup_multi|waiting|match|innings_break|game_over
+  mode:null,        // 'single'|'multi'
+  diff:'medium',
+  playerName:'You',
+  myRole:'p1',
+  roomCode:null,
+  game:null,
+};
+
+function makePlayer(name,xi){
+  return {
+    name, chips:100,
+    batters:[...xi.batters], bowlers:[...xi.bowlers],
+    recentBatters:[], recentBowlers:[],
+    dismissedBatters:[],
+    runs:0, wickets:0, overWickets:0,
+    pressurePoints:0, batterDiceCapped:false,
+    specialsUsedThisOver:{},
+    lastBallWasWicket:false,
+  };
+}
+
+function createGame(p1Name,p2Name,p1Bats){
+  return {
+    phase:'select',             // game phase within a ball
+    innings:1, over:1, ballInOver:1, totalBalls:0,
+    battingPlayer: p1Bats?'p1':'p2',
+    bowlingPlayer: p1Bats?'p2':'p1',
+    p1: makePlayer(p1Name, PLAYER_XI),
+    p2: makePlayer(p2Name, AI_XI),
+    innings1:null,              // saved at innings 1 end
+    matchLog:[],
+    lastBallWasWicket:false, lastBallRuns:0,
+    variationsUsedThisOver:false,
+    _sel:null,                  // temp selected card ID
+    cb:null,                    // current ball state
+  };
+}
+
+function newBall(gs){
+  gs.cb = {
+    batterCardId:null, bowlerCardId:null,
+    p1Committed:false, p2Committed:false,
+    batterRoll:null, bowlerRoll:null,
+    pot:0, bowlerPaid:0, batterPaid:0,
+    raised:false, raiseAmount:0,
+    reraised:false, reraisedAmount:0,
+    betStep:'idle',
+    outcome:null, runsScored:0,
+    commentary:'', effectsLog:[],
+    ashwinRating:null,
+  };
+}
+
+// ═══════════════════════════════════════════════════════
+// SECTION 8 — UI RENDERING (all DOM access is here only)
+// Pattern: render() → innerHTML of #app; bindEvents() wires clicks
+// ═══════════════════════════════════════════════════════
+function render(){
+  const el=document.getElementById('app');
+  switch(S.appPhase){
+    case 'home':          el.innerHTML=vHome();           break;
+    case 'setup_single':  el.innerHTML=vSetupSingle();    break;
+    case 'setup_multi':   el.innerHTML=vSetupMulti();     break;
+    case 'waiting':       el.innerHTML=vWaiting();        break;
+    case 'match':         el.innerHTML=vMatch();          break;
+    case 'innings_break': el.innerHTML=vInningsBreak();   break;
+    case 'game_over':     el.innerHTML=vGameOver();       break;
+    default:              el.innerHTML=vHome();
+  }
+  bindEvents();
+}
+
+// ── HOME ──────────────────────────────────────────────
+function vHome(){return`
+<div class="screen" style="padding-top:0">
+  <div class="home-logo">
+    <div style="font-size:64px">🏏</div>
+    <div class="game-title">OVER<br>&amp; OUT</div>
+    <div class="game-sub">Card · Dice · Cricket · Bluff</div>
+  </div>
+  <div class="divider-gold"></div>
+  <div style="padding:0 4px;margin-top:8px">
+    <button class="btn btn-primary" id="b-single">⚔️ &nbsp;Single Player vs AI</button>
+    <button class="btn btn-secondary" id="b-multi">🌐 &nbsp;Multiplayer — Online Room</button>
+  </div>
+  <div style="text-align:center;margin-top:32px;font-size:12px;color:var(--dim)">
+    2 overs · 12 balls · Teen Patti betting
+  </div>
+</div>`;}
+
+// ── SETUP SINGLE ──────────────────────────────────────
+function vSetupSingle(){return`
+<div class="screen">
+  <div class="section-title">Single Player</div>
+  <div class="section-sub">Pick your challenge level</div>
+  <input class="inp" id="inp-name" placeholder="Your name (optional)" maxlength="20" value="${S.playerName!=='You'?S.playerName:''}">
+  <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">
+    ${['easy','medium','hard'].map(d=>`
+    <button class="btn btn-secondary diff-btn ${S.diff===d?'active':''}" data-d="${d}" id="d-${d}">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-size:22px">${d==='easy'?'🟢':d==='medium'?'🟡':'🔴'}</span>
+        <div style="text-align:left">
+          <div style="font-size:17px;font-weight:700;text-transform:capitalize">${d}</div>
+          <div style="font-size:11px;color:var(--dim)">${d==='easy'?'Learn the game — AI plays casually':d==='medium'?'Balanced — ~50% win rate':'Ruthless AI — ~30% win rate'}</div>
+        </div>
+      </div>
+    </button>`).join('')}
+  </div>
+  <button class="btn btn-primary" id="b-start">START MATCH →</button>
+  <button class="btn btn-secondary" id="b-back" style="margin-top:10px">← Back</button>
+</div>`;}
+
+// ── SETUP MULTI ───────────────────────────────────────
+function vSetupMulti(){
+  const qRoom=new URLSearchParams(window.location.search).get('room')||'';
+  return`
+<div class="screen">
+  <div class="section-title">Multiplayer</div>
+  <div class="section-sub">Challenge a friend online</div>
+  <input class="inp" id="inp-mp-name" placeholder="Your name" maxlength="20" value="${S.playerName!=='You'?S.playerName:''}">
+  <button class="btn btn-primary" id="b-create">🎲 Create Room</button>
+  <div style="display:flex;align-items:center;gap:8px;margin:16px 0">
+    <div style="flex:1;height:1px;background:var(--border)"></div>
+    <span style="color:var(--dim);font-size:12px">OR</span>
+    <div style="flex:1;height:1px;background:var(--border)"></div>
+  </div>
+  <input class="inp" id="inp-code" placeholder="Enter room code" value="${qRoom}"
+    maxlength="6" style="letter-spacing:4px;text-transform:uppercase">
+  <button class="btn btn-secondary" id="b-join">🚪 Join Room</button>
+  <button class="btn btn-secondary" id="b-back" style="margin-top:10px">← Back</button>
+  <div style="margin-top:20px;padding:12px;background:var(--surface);border-radius:12px;
+    font-size:12px;color:var(--dim);line-height:1.6">
+    ⚠️ Firebase config required. See the TODO comment in the MP module (Section 6) and
+    the setup instructions at the bottom of this file.
+  </div>
+</div>`;}
+
+// ── WAITING ROOM ──────────────────────────────────────
+function vWaiting(){
+  const url=`${location.origin}${location.pathname}?room=${S.roomCode}`;
+  return`
+<div class="screen" style="text-align:center">
+  <div style="margin-top:40px">
+    <div class="section-title" style="font-size:22px;margin-bottom:4px">Room Created!</div>
+    <div class="section-sub">Share this code with your friend</div>
+    <div class="room-code">${S.roomCode||'??????'}</div>
+    <div style="font-size:12px;color:var(--dim);margin-top:6px">or share the link:</div>
+    <div class="room-url">${url}</div>
+    <button class="btn btn-secondary btn-sm" id="b-copy"
+      style="margin-top:8px;width:auto;padding:10px 20px">📋 Copy Link</button>
+  </div>
+  <div style="margin-top:48px">
+    <div class="wait-pulse"></div>
+    <div style="margin-top:14px;font-size:15px;color:var(--dim);font-weight:600">
+      Waiting for opponent…
+    </div>
+    <div style="font-size:12px;color:var(--dim);margin-top:4px">Keep this tab open</div>
+  </div>
+  <button class="btn btn-secondary" id="b-back" style="margin-top:28px">Cancel</button>
+</div>`;}
+
+// ── MATCH SCREEN ──────────────────────────────────────
+function vMatch(){
+  const gs=S.game; if(!gs) return '<div class="screen">Loading…</div>';
+  return`
+<div style="display:flex;flex-direction:column;min-height:100vh">
+  ${vScoreboard(gs)}
+  <div style="flex:1;display:flex;flex-direction:column">
+    ${vBallPhase(gs)}
+  </div>
+</div>`;}
+
+function vScoreboard(gs){
+  const p1=gs.p1,p2=gs.p2;
+  const bat=r=>`<span style="font-size:9px;font-weight:700;color:${gs.battingPlayer===r?'var(--green)':'var(--red)'}">
+    ${gs.battingPlayer===r?'🏏 BAT':'⚾ BOWL'}</span>`;
+
+  let tgt='';
+  if(gs.innings===2&&gs.innings1){
+    const need=(gs.innings1.runs+1)-gs[gs.battingPlayer].runs;
+    const bLeft=(2-gs.over)*6+(6-gs.ballInOver+1);
+    tgt=`<div style="text-align:center;font-size:11px;color:var(--gold);padding-bottom:2px">
+      Target ${gs.innings1.runs+1} · Need ${Math.max(0,need)} off ${bLeft} balls</div>`;
+  }
+  return`
+<div class="scoreboard">
+  <div class="sb-row">
+    <div class="sb-player">${bat('p1')}<div class="sb-name">${p1.name}</div>
+      <div class="sb-runs">${p1.runs}</div>
+      <div class="sb-wkts">/${p1.wickets} · ${p1.chips}🪙</div></div>
+    <div class="sb-mid">
+      <div class="sb-over">${GE.fmtOver(gs.over,gs.ballInOver)}</div>
+      <div class="sb-over-lbl">Over</div>
+    </div>
+    <div class="sb-player">${bat('p2')}<div class="sb-name">${p2.name}</div>
+      <div class="sb-runs">${p2.runs}</div>
+      <div class="sb-wkts">/${p2.wickets} · ${p2.chips}🪙</div></div>
+  </div>
+  ${tgt}
+  ${vBallTracker(gs)}
+</div>`;}
+
+function vBallTracker(gs){
+  const dots=[];
+  for(let i=1;i<=6;i++){
+    const e=gs.matchLog.find(l=>l.over===gs.over&&l.ball===i);
+    let c='bd';
+    if(i<gs.ballInOver&&e){ c+=' '+(e.outcome==='wicket'?'wkt':e.runs>0?'run':'dot'); }
+    else if(i===gs.ballInOver) c+=' cur';
+    dots.push(`<div class="${c}"></div>`);
+  }
+  return `<div class="ball-tracker">${dots.join('')}</div>`;}
+
+function vBallPhase(gs){
+  switch(gs.phase){
+    case 'select':          return vSelectPhase(gs);
+    case 'variations':      return vVariations(gs);
+    case 'bet_bowler':      return vBetBowler(gs);
+    case 'bet_batter':      return vBetBatter(gs);
+    case 'bet_bowler_final':return vBetBowlerFinal(gs);
+    case 'reveal':          return vReveal(gs);
+    case 'roll':            return vRoll(gs);
+    case 'resolve':         return vResolve(gs);
+    default:                return vSelectPhase(gs);
+  }
+}
+
+// ── CARD SELECT ───────────────────────────────────────
+function vSelectPhase(gs){
+  const hr=S.myRole, isBat=gs.battingPlayer===hr;
+  const ps=gs[hr];
+  const avail=isBat?GE.getAvailableBatters(ps):GE.getAvailableBowlers(ps);
+  const all=isBat?ps.batters:ps.bowlers;
+  const title=isBat?'🏏 Select Your Batter':'⚾ Select Your Bowler';
+
+  const items=avail.map(id=>{
+    const c=CARDS[id]; if(!c) return '';
+    const sel=gs._sel===id;
+    return`<div class="cg-item${sel?' selected':''}" data-cid="${id}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div><div class="cg-name">${c.name}</div><div class="cg-nick">${c.nick}</div></div>
+        <div class="cg-rat" style="color:${RCOL[c.rating]||'#f0b429'}">${c.rating}</div>
+      </div>
+      <div class="cg-sp${c.impl?' impl':''}">${c.impl?'⚡':'✨'} ${c.specialName}</div>
+      ${!c.impl?'<div style="font-size:9px;color:var(--dim)">Flavor only</div>':''}
+    </div>`;}).join('');
+
+  const locked=all.filter(id=>!avail.includes(id)).map(id=>{
+    const c=CARDS[id]; if(!c) return '';
+    const isDis=ps.dismissedBatters.includes(id);
+    return`<div class="cg-item locked">
+      <div style="display:flex;justify-content:space-between">
+        <div><div class="cg-name">${c.name}</div><div class="cg-nick">${c.nick}</div></div>
+        <div class="cg-rat" style="color:${RCOL[c.rating]};opacity:.5">${c.rating}</div>
+      </div>
+      <div style="font-size:11px;color:var(--red);margin-top:4px">🔒 ${isDis?'Dismissed':'Cooldown'}</div>
+    </div>`;}).join('');
+
+  return`
+<div style="flex:1;display:flex;flex-direction:column">
+  <div style="padding:12px 16px 6px;text-align:center;border-bottom:1px solid var(--border)">
+    <div style="font-size:17px;font-weight:700;color:var(--gold)">${title}</div>
+    <div style="font-size:12px;color:var(--dim)">Tap to select, then confirm</div>
+  </div>
+  <div class="card-grid">${items}${locked}</div>
+  <div style="padding:12px;border-top:1px solid var(--border)">
+    ${gs._sel
+      ?`<button class="btn btn-primary" id="b-confirm">CONFIRM → ${CARDS[gs._sel]?.nick}</button>`
+      :`<button class="btn btn-secondary" disabled style="opacity:.35">Select a card first</button>`}
+  </div>
+</div>`;}
+
+// ── VARIATIONS PICKER ─────────────────────────────────
+function vVariations(gs){return`
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px">
+  <div style="font-size:44px;margin-bottom:10px">🎭</div>
+  <div style="font-family:var(--ff-d);font-size:38px;color:var(--gold);margin-bottom:6px">VARIATIONS!</div>
+  <div style="font-size:15px;color:var(--dim);text-align:center;margin-bottom:24px">
+    Ashwin's special — declare your rating for this ball<br>
+    <span style="font-size:12px">(Base rating: 5 · Once per over)</span>
+  </div>
+  <div style="display:flex;gap:14px">
+    ${[3,4,5,6].map(r=>`
+    <button class="btn btn-secondary" id="var-${r}"
+      style="width:60px;height:60px;font-family:var(--ff-d);font-size:30px;padding:0;
+      border-radius:12px;color:${RCOL[r]}">${r}</button>`).join('')}
+  </div>
+</div>`;}
+
+// ── CARD HELPERS ──────────────────────────────────────
+function vCardBack(lbl,pname,committed){return`
+<div class="card-wrap">
+  <div class="card-lbl">${lbl}</div>
+  <div class="card-slot"><div class="card-inner">
+    <div class="c-back" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px">
+      ${committed?'<span style="font-size:26px">🃏</span><div style="font-size:9px;color:var(--gold);font-weight:700">PICKED</div>':'<span style="font-size:32px;opacity:.25">🏏</span>'}
+    </div>
+  </div></div>
+  <div class="card-pname">${pname}</div>
+</div>`;}
+
+function vCardFront(cardId,lbl,pname){
+  const c=CARDS[cardId];
+  if(!c) return `<div class="card-wrap"><div class="card-lbl">${lbl}</div><div class="card-slot"></div></div>`;
+  return`
+<div class="card-wrap">
+  <div class="card-lbl">${lbl}</div>
+  <div class="card-slot"><div class="card-inner flipped">
+    <div class="c-back"></div>
+    <div class="c-front">
+      <div class="c-rating" style="background:${RCOL[c.rating]||'#f0b429'}">${c.rating}</div>
+      <div class="c-name">${c.name}</div>
+      <div class="c-nick">${c.nick}</div>
+      <div class="c-special ${c.impl?'c-sp-on':'c-sp-off'}">${c.impl?'⚡':'✨'} ${c.specialName}${c.impl?'':' (flavor)'}</div>
+      <div class="c-type ${c.type==='batter'?'t-bat':'t-bowl'}">${c.type.toUpperCase()}</div>
+    </div>
+  </div></div>
+  <div class="card-pname">${pname}</div>
+</div>`;}
+
+function vPot(pot){
+  const n=Math.min(Math.floor(pot/5),14);
+  return`<div class="pot-area" style="padding:8px 0">
+    <div class="pot-lbl">POT</div>
+    <div class="pot-val">${pot} 🪙</div>
+    <div class="chip-pile">${'<div class="chip"></div>'.repeat(n)}</div>
+  </div>`;}
+
+// ── BETTING PHASES ────────────────────────────────────
+function vBetBowler(gs){
+  const cb=gs.cb, hr=S.myRole;
+  const brole=gs.bowlingPlayer, batrole=gs.battingPlayer;
+  const bps=gs[brole], batps=gs[batrole];
+  const humanIsBowler=brole===hr;
+
+  const cardsRow=`<div style="padding:12px;display:flex;justify-content:center;gap:24px">
+    ${vCardBack('BOWLER',bps.name,true)}${vCardBack('BATTER',batps.name,true)}
+  </div>`;
+
+  if(humanIsBowler){return`
+<div style="flex:1;display:flex;flex-direction:column">
+  ${cardsRow}${vPot(cb.pot)}
+  <div class="betting-area" style="flex:1;display:flex;flex-direction:column;justify-content:flex-end">
+    <div class="bet-status">🎯 Your move as bowler — raise the stakes?</div>
+    <div class="chips-row">
+      <span>Your chips: <span class="chips-val">${bps.chips}🪙</span></span>
+      <span>Ante paid: <span class="chips-val">5🪙</span></span>
+    </div>
+    <button class="btn btn-secondary btn-sm" id="b-pass">PASS (no raise)</button>
+    <div class="btn-row" style="margin-top:8px">
+      <button class="btn btn-primary btn-sm" id="b-r5" ${bps.chips<5?'disabled':''}>RAISE +5</button>
+      <button class="btn btn-primary btn-sm" id="b-r10" ${bps.chips<10?'disabled':''}>+10</button>
+      <button class="btn btn-primary btn-sm" id="b-r20" ${bps.chips<20?'disabled':''}>+20</button>
+    </div>
+  </div>
+</div>`;}
+
+  return`<div style="flex:1;display:flex;flex-direction:column">
+    ${cardsRow}${vPot(cb.pot)}
+    <div style="flex:1;display:flex;align-items:center;justify-content:center">
+      <div class="ai-think">AI deciding<div class="think-dots"><div class="tdot"></div><div class="tdot"></div><div class="tdot"></div></div></div>
+    </div></div>`;}
+
+function vBetBatter(gs){
+  const cb=gs.cb, hr=S.myRole;
+  const brole=gs.bowlingPlayer, batrole=gs.battingPlayer;
+  const bps=gs[brole], batps=gs[batrole];
+  const humanIsBatter=batrole===hr;
+
+  const cardsRow=`<div style="padding:12px;display:flex;justify-content:center;gap:24px">
+    ${vCardBack('BOWLER',bps.name,true)}${vCardBack('BATTER',batps.name,true)}
+  </div>`;
+
+  if(humanIsBatter){
+    const canR=!cb.reraised && batps.chips>=(cb.raiseAmount);
+    return`
+<div style="flex:1;display:flex;flex-direction:column">
+  ${cardsRow}${vPot(cb.pot)}
+  <div class="betting-area" style="flex:1;display:flex;flex-direction:column;justify-content:flex-end">
+    <div class="bet-status">⚡ Raised +${cb.raiseAmount}! Your call?</div>
+    <div class="chips-row">
+      <span>Your chips: <span class="chips-val">${batps.chips}🪙</span></span>
+      <span>Pot: <span class="chips-val">${cb.pot}🪙</span></span>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-danger btn-sm" id="b-fold">🏳 FOLD</button>
+      <button class="btn btn-secondary btn-sm" id="b-call" ${batps.chips<cb.raiseAmount?'disabled':''}>✅ CALL +${cb.raiseAmount}</button>
+    </div>
+    ${canR?`<div class="btn-row" style="margin-top:8px">
+      <button class="btn btn-primary btn-xs" id="b-rr5">RE-RAISE +5</button>
+      <button class="btn btn-primary btn-xs" id="b-rr10">+10</button>
+      <button class="btn btn-primary btn-xs" id="b-rr20">+20</button>
+    </div>`:''}
+  </div>
+</div>`;}
+
+  return`<div style="flex:1;display:flex;flex-direction:column">
+    ${cardsRow}${vPot(cb.pot)}
+    <div style="flex:1;display:flex;align-items:center;justify-content:center">
+      <div class="ai-think">AI deciding<div class="think-dots"><div class="tdot"></div><div class="tdot"></div><div class="tdot"></div></div></div>
+    </div></div>`;}
+
+function vBetBowlerFinal(gs){
+  const cb=gs.cb, hr=S.myRole;
+  const brole=gs.bowlingPlayer, batrole=gs.battingPlayer;
+  const bps=gs[brole], batps=gs[batrole];
+  const humanIsBowler=brole===hr;
+
+  const cardsRow=`<div style="padding:12px;display:flex;justify-content:center;gap:24px">
+    ${vCardBack('BOWLER',bps.name,true)}${vCardBack('BATTER',batps.name,true)}
+  </div>`;
+
+  if(humanIsBowler){return`
+<div style="flex:1;display:flex;flex-direction:column">
+  ${cardsRow}${vPot(cb.pot)}
+  <div class="betting-area" style="flex:1;display:flex;flex-direction:column;justify-content:flex-end">
+    <div class="bet-status">Re-raised +${cb.reraisedAmount}! Final decision:</div>
+    <div class="btn-row">
+      <button class="btn btn-danger btn-sm" id="b-bowler-fold">🏳 FOLD (concede 4)</button>
+      <button class="btn btn-secondary btn-sm" id="b-bowler-call" ${bps.chips<cb.reraisedAmount?'disabled':''}>✅ CALL +${cb.reraisedAmount}</button>
+    </div>
+  </div>
+</div>`;}
+
+  return`<div style="flex:1;display:flex;flex-direction:column">
+    ${cardsRow}${vPot(cb.pot)}
+    <div style="flex:1;display:flex;align-items:center;justify-content:center">
+      <div class="ai-think">AI deciding<div class="think-dots"><div class="tdot"></div><div class="tdot"></div><div class="tdot"></div></div></div>
+    </div></div>`;}
+
+// ── REVEAL ────────────────────────────────────────────
+function vReveal(gs){
+  const cb=gs.cb, bRole=gs.battingPlayer, wRole=gs.bowlingPlayer;
+  return`
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;gap:16px">
+  <div style="font-family:var(--ff-d);font-size:24px;color:var(--gold);letter-spacing:3px">REVEAL!</div>
+  <div style="display:flex;gap:28px">
+    ${vCardFront(cb[wRole+'CardId'],'BOWLER',gs[wRole].name)}
+    ${vCardFront(cb[bRole+'CardId'],'BATTER',gs[bRole].name)}
+  </div>
+  ${vPot(cb.pot)}
+  <div style="color:var(--dim);font-size:14px;animation:fadeIn .5s ease">Rolling dice…</div>
+</div>`;}
+
+// ── ROLL ──────────────────────────────────────────────
+const DICE_FACE=['⚀','⚁','⚂','⚃','⚄','⚅'];
+
+function vRoll(gs){
+  const cb=gs.cb, bRole=gs.battingPlayer, wRole=gs.bowlingPlayer;
+  return`
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;gap:14px">
+  <div style="display:flex;gap:28px">
+    ${vCardFront(cb[wRole+'CardId'],'BOWLER',gs[wRole].name)}
+    ${vCardFront(cb[bRole+'CardId'],'BATTER',gs[bRole].name)}
+  </div>
+  ${vPot(cb.pot)}
+  <div class="dice-area">
+    <div class="dice-wrap">
+      <div class="dice rolling" id="d-bowl">🎲</div>
+      <div class="dice-lbl">Bowler</div>
+    </div>
+    <div class="dice-wrap">
+      <div class="dice rolling" id="d-bat">🎲</div>
+      <div class="dice-lbl">Batter</div>
+    </div>
+  </div>
+</div>`;}
+
+// ── RESOLVE ───────────────────────────────────────────
+function vResolve(gs){
+  const cb=gs.cb, bRole=gs.battingPlayer, wRole=gs.bowlingPlayer;
+  const bCard=CARDS[cb[bRole+'CardId']], wCard=CARDS[cb[wRole+'CardId']];
+  const labels={six:'SIX! +6',four:'FOUR! +4',two:'2 RUNS',one:'1 RUN',dot:'DOT BALL',pressure:'DOT + PRESSURE ⚠',wicket:'WICKET!'};
+
+  return`
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px;gap:12px">
+  <div style="display:flex;gap:28px">
+    ${vCardFront(cb[wRole+'CardId'],'BOWLER',gs[wRole].name)}
+    ${vCardFront(cb[bRole+'CardId'],'BATTER',gs[bRole].name)}
+  </div>
+  ${vPot(cb.pot)}
+  <div class="dice-area">
+    <div class="dice-wrap">
+      <div class="dice" id="d-bowl">${cb.bowlerRoll?DICE_FACE[cb.bowlerRoll-1]:'?'}</div>
+      <div class="dice-lbl">${wCard?wCard.rating:'-'} + ${cb.bowlerRoll||'?'}</div>
+    </div>
+    <div class="dice-wrap">
+      <div class="dice" id="d-bat">${cb.batterRoll?DICE_FACE[cb.batterRoll-1]:'?'}</div>
+      <div class="dice-lbl">${bCard?bCard.rating:'-'} + ${cb.batterRoll||'?'}</div>
+    </div>
+  </div>
+  <div class="ob ob-${cb.outcome}">${labels[cb.outcome]||cb.outcome}</div>
+  ${cb.effectsLog.length?`<div class="effects-log">${cb.effectsLog.join(' · ')}</div>`:''}
+  <div class="commentary"><div class="commentary-text">${cb.commentary}</div></div>
+</div>`;}
+
+// ── INNINGS BREAK ─────────────────────────────────────
+function vInningsBreak(){
+  const gs=S.game; if(!gs||!gs.innings1) return '';
+  const nbat=gs.battingPlayer;
+  const target=gs.innings1.runs+1;
+  return`
+<div class="screen" style="text-align:center">
+  <div style="margin-top:50px">
+    <div style="font-size:52px">🏏</div>
+    <div class="innings-title">INNINGS BREAK</div>
+    <div style="font-size:15px;color:var(--dim);margin-bottom:20px">First innings complete</div>
+    <div class="final-box">
+      <div style="font-size:13px;color:var(--dim)">1st Innings Score</div>
+      <div style="font-family:var(--ff-d);font-size:56px;color:var(--gold);line-height:1">
+        ${gs.innings1.runs}/${gs.innings1.wickets}
+      </div>
+      <div style="font-size:13px;color:var(--dim)">in ${gs.innings1.balls} balls</div>
+    </div>
+    <div style="font-size:16px;margin-bottom:24px">
+      <span style="color:var(--gold)">${gs[nbat].name}</span> needs
+      <span style="color:var(--green);font-weight:700">${target}</span> to win
+    </div>
+    <button class="btn btn-primary" id="b-start2">BEGIN INNINGS 2 →</button>
+  </div>
+</div>`;}
+
+// ── GAME OVER ─────────────────────────────────────────
+function vGameOver(){
+  const gs=S.game; if(!gs) return '';
+  const p1=gs.p1,p2=gs.p2;
+  let wmsg='It\'s a tie! Remarkable!';
+  if(p1.runs>p2.runs) wmsg=`${p1.name} wins by ${p1.runs-p2.runs} runs! 🏆`;
+  else if(p2.runs>p1.runs) wmsg=`${p2.name} wins by ${p2.runs-p1.runs} runs! 🏆`;
+  else if(p1.chips>p2.chips) wmsg=`${p1.name} wins on chips! (${p1.chips} vs ${p2.chips}) 🏆`;
+  else if(p2.chips>p1.chips) wmsg=`${p2.name} wins on chips! (${p2.chips} vs ${p1.chips}) 🏆`;
+
+  return`
+<div class="screen" style="text-align:center">
+  <div style="margin-top:32px">
+    <div style="font-size:56px">🏆</div>
+    <div class="section-title" style="font-size:22px;margin-top:6px">MATCH OVER</div>
+    <div style="font-size:18px;color:var(--gold);font-weight:700;margin:12px 0;line-height:1.4">${wmsg}</div>
+    <div class="final-box">
+      <div style="display:flex;justify-content:space-between">
+        <div style="flex:1;text-align:center">
+          <div style="font-size:12px;color:var(--dim)">${p1.name}</div>
+          <div style="font-family:var(--ff-d);font-size:44px;color:var(--gold)">${p1.runs}</div>
+          <div style="font-size:11px;color:var(--dim)">${p1.wickets} wkts · ${p1.chips}🪙</div>
+        </div>
+        <div style="display:flex;align-items:center;color:var(--dim);padding:0 12px">vs</div>
+        <div style="flex:1;text-align:center">
+          <div style="font-size:12px;color:var(--dim)">${p2.name}</div>
+          <div style="font-family:var(--ff-d);font-size:44px;color:var(--gold)">${p2.runs}</div>
+          <div style="font-size:11px;color:var(--dim)">${p2.wickets} wkts · ${p2.chips}🪙</div>
+        </div>
+      </div>
+    </div>
+    <button class="btn btn-primary" id="b-again">PLAY AGAIN</button>
+    <button class="btn btn-secondary" id="b-home" style="margin-top:10px">← Home</button>
+  </div>
+</div>`;}
+
+// ═══════════════════════════════════════════════════════
+// SECTION 9 — GAME ACTIONS
+// All state mutations live here. Never touch DOM.
+// ═══════════════════════════════════════════════════════
+
+function startSingle(){
+  const n=document.getElementById('inp-name')?.value.trim();
+  S.playerName=n||'You'; S.mode='single'; S.myRole='p1';
+  // RULE AMBIGUITY: Coin toss not animated in v0 — player always bats first in innings 1
+  const gs=createGame(S.playerName,'AI',true);
+  newBall(gs); gs.phase='select';
+  S.game=gs; S.appPhase='match';
+  render();
+}
+
+function selectCard(id){ S.game._sel=id; render(); }
+
+function confirmCard(){
+  const gs=S.game; if(!gs||!gs._sel) return;
+  const hr=S.myRole, sel=gs._sel;
+  const cb=gs.cb;
+  cb[hr+'CardId']=sel; cb[hr+'Committed']=true; gs._sel=null;
+
+  if(S.mode==='single'){
+    const ai=hr==='p1'?'p2':'p1';
+    const aiDec=AI.makeDecision(gs,S.diff,ai);
+    cb[ai+'CardId']=aiDec.cardId; cb[ai+'Committed']=true;
+
+    // Check Variations (Ashwin) — bowler must declare before reveal
+    const bowlerCard=CARDS[cb[gs.bowlingPlayer+'CardId']];
+    if(bowlerCard?.special==='variations'&&bowlerCard.impl&&!gs.variationsUsedThisOver){
+      if(gs.bowlingPlayer===hr){
+        gs.phase='variations'; render(); return;
+      } else {
+        cb.ashwinRating=AI.decideVariations(gs);
+        gs.variationsUsedThisOver=true;
+      }
+    }
+    doAnte(gs); startBetting(gs);
+  }
+}
+
+function declareVariations(rating){
+  const gs=S.game;
+  gs.cb.ashwinRating=rating; gs.variationsUsedThisOver=true;
+  doAnte(gs); startBetting(gs);
+}
+
+function doAnte(gs){
+  const cb=gs.cb;
+  // RULE: Ante is 5 chips each, automatically deducted
+  gs.p1.chips-=5; gs.p2.chips-=5;
+  cb.bowlerPaid+=5; cb.batterPaid+=5;
+  cb.pot=10;
+}
+
+function startBetting(gs){
+  const hr=S.myRole, brole=gs.bowlingPlayer;
+  cb_set(gs,'bet_bowler');
+  if(S.mode==='single' && brole!==hr){
+    // AI is bowler — decide and act
+    setTimeout(()=>{ aiActBowler(gs); },700);
+  }
+  render();
+}
+
+function cb_set(gs,phase){ gs.phase=phase; }
+
+function aiActBowler(gs){
+  if(!S.game||S.game!==gs) return;
+  const brole=gs.bowlingPlayer;
+  const dec=AI.makeDecision(gs,S.diff,brole);
+  if(dec.betAction==='raise' && gs[brole].chips>=dec.raiseAmount){
+    bowlerRaiseAct(gs,brole,dec.raiseAmount);
+    // AI batter responds if human is batter
+    if(gs.battingPlayer!==S.myRole){
+      setTimeout(()=>{ aiActBatter(gs); },700);
+    } else {
+      render(); // show batter response UI to human
+    }
+  } else {
+    // Pass → go to reveal
+    proceedToReveal(gs);
+  }
+}
+
+function bowlerRaiseAct(gs,brole,amount){
+  const cb=gs.cb;
+  cb.raised=true; cb.raiseAmount=amount;
+  gs[brole].chips-=amount; cb.pot+=amount;
+  gs.phase='bet_batter';
+}
+
+function humanBowlerBet(action,amount){
+  const gs=S.game; if(!gs) return;
+  const brole=gs.bowlingPlayer;
+  if(action==='pass'){
+    proceedToReveal(gs);
+  } else {
+    bowlerRaiseAct(gs,brole,amount);
+    render();
+    // If AI is batter, AI responds
+    if(gs.battingPlayer!==S.myRole){
+      setTimeout(()=>{ aiActBatter(gs); },700);
+    }
+  }
+}
+
+function aiActBatter(gs){
+  if(!S.game||S.game!==gs) return;
+  const batrole=gs.battingPlayer, brole=gs.bowlingPlayer;
+  const resp=AI.respondToRaise(gs,S.diff,batrole,gs.cb.raiseAmount);
+  if(resp==='fold'){
+    doFoldBatter(gs); return;
+  }
+  if(resp==='reraise'){
+    const amt=[5,10][Math.floor(Math.random()*2)];
+    batterReraise(gs,batrole,amt);
+    if(gs.bowlingPlayer!==S.myRole){
+      setTimeout(()=>{ aiActBowlerFinal(gs); },700);
+    } else {
+      render();
+    }
+    return;
+  }
+  // call
+  batterCall(gs,batrole);
+  proceedToReveal(gs);
+}
+
+function batterReraise(gs,batrole,amt){
+  const cb=gs.cb;
+  cb.reraised=true; cb.reraisedAmount=amt;
+  gs[batrole].chips-=(cb.raiseAmount+amt); cb.pot+=(cb.raiseAmount+amt);
+  gs.phase='bet_bowler_final';
+}
+
+function batterCall(gs,batrole){
+  const cb=gs.cb;
+  gs[batrole].chips-=cb.raiseAmount; cb.pot+=cb.raiseAmount;
+}
+
+function humanBatterResponse(action,amount){
+  const gs=S.game; if(!gs) return;
+  const batrole=gs.battingPlayer, brole=gs.bowlingPlayer;
+  if(action==='fold'){ doFoldBatter(gs); return; }
+  if(action==='reraise'){
+    batterReraise(gs,batrole,amount);
+    render();
+    if(gs.bowlingPlayer!==S.myRole){
+      setTimeout(()=>{ aiActBowlerFinal(gs); },700);
+    }
+    return;
+  }
+  // call
+  batterCall(gs,batrole); proceedToReveal(gs);
+}
+
+function aiActBowlerFinal(gs){
+  if(!S.game||S.game!==gs) return;
+  const brole=gs.bowlingPlayer, batrole=gs.battingPlayer;
+  const resp=AI.respondToRaise(gs,S.diff,brole,gs.cb.reraisedAmount);
+  if(resp==='fold'){ doFoldBowler(gs); return; }
+  gs[brole].chips-=gs.cb.reraisedAmount; gs.cb.pot+=gs.cb.reraisedAmount;
+  proceedToReveal(gs);
+}
+
+function humanBowlerFinal(action){
+  const gs=S.game; if(!gs) return;
+  const brole=gs.bowlingPlayer;
+  if(action==='fold'){ doFoldBowler(gs); return; }
+  gs[brole].chips-=gs.cb.reraisedAmount; gs.cb.pot+=gs.cb.reraisedAmount;
+  proceedToReveal(gs);
+}
+
+function doFoldBatter(gs){
+  const cb=gs.cb, batrole=gs.battingPlayer, brole=gs.bowlingPlayer;
+  cb.commentary=rnd('fold_bat');
+  cb.outcome='wicket'; cb.runsScored=0;
+  awardPot(gs,brole);
+  applyWicket(gs,batrole);
+  showResolveAndAdvance(gs);
+}
+
+function doFoldBowler(gs){
+  const cb=gs.cb, batrole=gs.battingPlayer, brole=gs.bowlingPlayer;
+  cb.commentary=rnd('fold_bowl');
+  cb.outcome='four'; cb.runsScored=4;
+  gs[batrole].runs+=4;
+  awardPot(gs,batrole);
+  gs.lastBallRuns=4; gs.lastBallWasWicket=false;
+  showResolveAndAdvance(gs);
+}
+
+function awardPot(gs,winner){
+  gs[winner].chips+=gs.cb.pot;
+}
+
+function applyWicket(gs,batrole){
+  gs[batrole].wickets++;
+  gs[batrole].overWickets++;
+  const cardId=gs.cb[batrole+'CardId'];
+  if(cardId&&!gs[batrole].dismissedBatters.includes(cardId)){
+    gs[batrole].dismissedBatters.push(cardId);
+  }
+  gs.lastBallWasWicket=true; gs.lastBallRuns=0;
+}
+
+function proceedToReveal(gs){
+  gs.phase='reveal'; render();
+  setTimeout(()=>{ doRoll(gs); },900);
+}
+
+function doRoll(gs){
+  gs.phase='roll'; render();
+  // Animate dice for 1100ms minimum (never skippable per spec)
+  const bRoll=Math.ceil(Math.random()*6);
+  const wRoll=Math.ceil(Math.random()*6);
+  animateDice('d-bat',bRoll,()=>{});
+  animateDice('d-bowl',wRoll,()=>{});
+  setTimeout(()=>{ resolveRound(gs,bRoll,wRoll); },1100);
+}
+
+function animateDice(elId,finalVal,cb){
+  let count=0, total=16;
+  const iv=setInterval(()=>{
+    const el=document.getElementById(elId);
+    if(el) el.textContent=DICE_FACE[Math.floor(Math.random()*6)];
+    count++;
+    if(count>=total){
+      clearInterval(iv);
+      if(el) el.textContent=DICE_FACE[finalVal-1];
+      cb();
+    }
+  },65);
+}
+
+function resolveRound(gs,bRoll,wRoll){
+  const cb=gs.cb;
+  const batrole=gs.battingPlayer, brole=gs.bowlingPlayer;
+  const bCard=CARDS[cb[batrole+'CardId']];
+  const wCard=CARDS[cb[brole+'CardId']];
+  const batPS=gs[batrole], bowlPS=gs[brole];
+
+  // Effective bowler rating (Variations override)
+  let bowlerRating=wCard?wCard.rating:1;
+  if(cb.ashwinRating && wCard?.special==='variations') bowlerRating=cb.ashwinRating;
+
+  const ef=cb.effectsLog;
+
+  // Apply batter dice cap (pressure effect)
+  let effectiveBatterRoll=bRoll;
+  if(batPS.batterDiceCapped){
+    effectiveBatterRoll=Math.min(bRoll,4);
+    if(bRoll>4) ef.push('⚠️ Dice capped at 4 (pressure!)');
+    batPS.batterDiceCapped=false;
+  }
+
+  // Apply batter special
+  const bMods=GE.applyBatterSpecial(bCard,effectiveBatterRoll,gs);
+  if(bMods.forceDot){ cb.outcome='dot'; cb.runsScored=0; cb.commentary=rnd('dot');
+    if(bCard?.impl) ef.push(`${bCard.specialName}: forced dot!`);
+    cb.batterRoll=effectiveBatterRoll; cb.bowlerRoll=wRoll;
+    awardPot(gs,brole); finalise(gs); return; }
+  if(bMods.shouldReroll){
+    effectiveBatterRoll=Math.ceil(Math.random()*6);
+    if(bCard?.impl) ef.push(`${bCard.specialName}: re-rolled → ${effectiveBatterRoll}!`);
+  }
+  let adjBRoll=bMods.effectiveRoll;
+
+  // Apply bowler special
+  const wMods=GE.applyBowlerSpecial(wCard,wRoll,gs);
+  let adjWRoll=wMods.effectiveRoll;
+  if(wCard?.impl&&(adjWRoll!==wRoll)) ef.push(`${wCard.specialName}: bowler +${adjWRoll-wRoll}!`);
+
+  // Pace Demon penalty (reduces batter roll)
+  if(wMods.opponentPenalty>0){
+    adjBRoll=Math.max(1,adjBRoll-wMods.opponentPenalty);
+    ef.push(`${wCard.specialName}: batter −${wMods.opponentPenalty}!`);
+  }
+
+  const bTotal=adjBRoll+(bCard?bCard.rating:1);
+  const wTotal=adjWRoll+bowlerRating;
+  const res=GE.resolve(bTotal-wTotal);
+
+  cb.batterRoll=bRoll; cb.bowlerRoll=wRoll;
+  cb.outcome=res.outcome; cb.runsScored=res.runs;
+
+  // Big Hitter bonus runs
+  if(res.outcome==='six'&&bCard?.special==='big_hitter'&&bCard.impl){
+    const bonus=bMods.extraRuns||0;
+    if(bonus>0){ cb.runsScored+=bonus; ef.push(`Big Hitter: +${bonus} bonus runs!`); }
+  }
+
+  cb.commentary=rnd(res.outcome);
+  if(bCard?.impl&&adjBRoll>effectiveBatterRoll) ef.push(`${bCard.specialName} active!`);
+
+  gs[batrole].runs+=cb.runsScored;
+  if(res.wicket) applyWicket(gs,batrole);
+  else { gs.lastBallWasWicket=false; gs.lastBallRuns=cb.runsScored; }
+
+  if(res.pressure) gs[brole].pressurePoints++;
+  if(gs[brole].pressurePoints>0&&gs[brole].pressurePoints%3===0){
+    gs[batrole].batterDiceCapped=true;
+    // note: effect will fire on NEXT ball
+  }
+
+  awardPot(gs,res.potTo==='batter'?batrole:brole);
+  finalise(gs);
+}
+
+function finalise(gs){
+  gs.phase='resolve'; render();
+  setTimeout(()=>{ advanceBall(gs); },2400);
+}
+
+function showResolveAndAdvance(gs){
+  gs.phase='resolve'; render();
+  setTimeout(()=>{ advanceBall(gs); },2200);
+}
+
+function advanceBall(gs){
+  const cb=gs.cb;
+  const batrole=gs.battingPlayer, brole=gs.bowlingPlayer;
+
+  // Log the ball
+  gs.matchLog.push({over:gs.over,ball:gs.ballInOver,outcome:cb.outcome,runs:cb.runsScored});
+
+  // Lockout played cards
+  if(cb[batrole+'CardId']) gs[batrole].recentBatters=GE.pushLockout(gs[batrole].recentBatters,cb[batrole+'CardId']);
+  if(cb[brole+'CardId'])   gs[brole].recentBowlers  =GE.pushLockout(gs[brole].recentBowlers,  cb[brole+'CardId']);
+
+  gs.totalBalls++;
+  gs.ballInOver++;
+
+  // Check: 3 wickets in this over → over ends early
+  const overDone = gs.ballInOver>6 || gs[batrole].overWickets>=3;
+
+  if(overDone){
+    gs.ballInOver=1;
+    gs[batrole].overWickets=0;
+    gs.variationsUsedThisOver=false; // reset Variations per-over
+    gs.over++;
+    if(gs.over>2) { endInnings(gs); return; }
+  }
+
+  // Check: out of available batters
+  if(GE.getAvailableBatters(gs[batrole]).length===0){
+    endInnings(gs); return;
+  }
+
+  // Next ball
+  newBall(gs); gs.phase='select'; gs._sel=null;
+  S.appPhase='match'; render();
+}
+
+function endInnings(gs){
+  if(gs.innings===1){
+    gs.innings1={runs:gs[gs.battingPlayer].runs, wickets:gs[gs.battingPlayer].wickets, balls:gs.totalBalls};
+    S.appPhase='innings_break';
+    render();
+  } else {
+    S.appPhase='game_over'; render();
+  }
+}
+
+function startInnings2(){
+  const gs=S.game;
+  // Swap batting/bowling
+  const prevBat=gs.battingPlayer;
+  gs.battingPlayer=gs.bowlingPlayer;
+  gs.bowlingPlayer=prevBat;
+  gs.innings=2; gs.over=1; gs.ballInOver=1; gs.totalBalls=0;
+  gs.lastBallWasWicket=false; gs.lastBallRuns=0;
+  gs.variationsUsedThisOver=false;
+
+  // Reset per-innings tracking
+  const batrole=gs.battingPlayer;
+  gs[batrole].dismissedBatters=[];
+  gs[batrole].recentBatters=[];
+  gs[batrole].overWickets=0;
+  gs[batrole].pressurePoints=0;
+  gs[batrole].batterDiceCapped=false;
+  const brole=gs.bowlingPlayer;
+  gs[brole].recentBowlers=[];
+
+  newBall(gs); gs.phase='select'; gs._sel=null;
+  S.appPhase='match'; render();
+}
+
+// ═══════════════════════════════════════════════════════
+// SECTION 10 — EVENT BINDING
+// ═══════════════════════════════════════════════════════
+function bindEvents(){
+  function on(id,fn){ const el=document.getElementById(id); if(el) el.addEventListener('click',fn,{once:true}); }
+
+  // ── HOME ──
+  on('b-single',()=>{ S.appPhase='setup_single'; render(); });
+  on('b-multi', ()=>{ S.appPhase='setup_multi'; render(); });
+
+  // ── SETUP SINGLE ──
+  on('b-back',()=>{ S.appPhase='home'; render(); });
+  on('b-start',()=>{ startSingle(); });
+  ['easy','medium','hard'].forEach(d=>{
+    on(`d-${d}`,()=>{ S.diff=d; render(); });
+  });
+
+  // ── SETUP MULTI ──
+  on('b-create',async()=>{
+    const n=document.getElementById('inp-mp-name')?.value.trim()||'Player';
+    S.playerName=n;
+    if(!MP.init()){ alert('Firebase not configured. See Section 6 in the code.'); return; }
+    const code=await MP.createRoom(n);
+    if(!code){ alert('Failed to create room.'); return; }
+    S.roomCode=code; S.appPhase='waiting'; S.myRole='p1'; render();
+    MP.subscribeState(remoteState=>{
+      if(remoteState.players?.p2?.joined && S.appPhase==='waiting'){
+        S.appPhase='match';
+        // TODO: Initialize game from remote state, then render
+        alert('Opponent joined! (Multiplayer game flow coming in next version — use Single Player for now)');
+      }
+    });
+  });
+  on('b-join',async()=>{
+    const n=document.getElementById('inp-mp-name')?.value.trim()||'Player';
+    const code=document.getElementById('inp-code')?.value.trim().toUpperCase();
+    if(!code||code.length<4){ alert('Enter a valid room code.'); return; }
+    S.playerName=n;
+    if(!MP.init()){ alert('Firebase not configured.'); return; }
+    await MP.joinRoom(code,n);
+    S.roomCode=code; S.myRole='p2';
+    alert('Joined room! (Full multiplayer flow coming in next version)');
+  });
+  on('b-back',()=>{ S.appPhase='home'; render(); });
+
+  // ── WAITING ──
+  on('b-copy',()=>{
+    const url=document.getElementById('share-url')?.textContent;
+    if(url) navigator.clipboard?.writeText(url).then(()=>alert('Link copied!'));
+  });
+
+  // ── CARD SELECT ──
+  document.querySelectorAll('.cg-item:not(.locked)').forEach(el=>{
+    el.addEventListener('click',()=>{ selectCard(el.dataset.cid); });
+  });
+  on('b-confirm',()=>{ confirmCard(); });
+
+  // ── VARIATIONS ──
+  [3,4,5,6].forEach(r=>{ on(`var-${r}`,()=>{ declareVariations(r); }); });
+
+  // ── BETTING ──
+  on('b-pass',()=>{ humanBowlerBet('pass',0); });
+  on('b-r5',()=>{ humanBowlerBet('raise',5); });
+  on('b-r10',()=>{ humanBowlerBet('raise',10); });
+  on('b-r20',()=>{ humanBowlerBet('raise',20); });
+
+  on('b-fold',()=>{ humanBatterResponse('fold',0); });
+  on('b-call',()=>{ humanBatterResponse('call',0); });
+  on('b-rr5',()=>{ humanBatterResponse('reraise',5); });
+  on('b-rr10',()=>{ humanBatterResponse('reraise',10); });
+  on('b-rr20',()=>{ humanBatterResponse('reraise',20); });
+
+  on('b-bowler-fold',()=>{ humanBowlerFinal('fold'); });
+  on('b-bowler-call',()=>{ humanBowlerFinal('call'); });
+
+  // ── INNINGS BREAK ──
+  on('b-start2',()=>{ startInnings2(); });
+
+  // ── GAME OVER ──
+  on('b-again',()=>{ startSingle(); });
+  on('b-home',()=>{ S.appPhase='home'; render(); });
+}
+
+// ═══════════════════════════════════════════════════════
+// SECTION 11 — INIT
+// ═══════════════════════════════════════════════════════
+function init(){
+  // Handle browser refresh on multiplayer URL
+  const qRoom=new URLSearchParams(window.location.search).get('room');
+  if(qRoom){
+    S.appPhase='setup_multi';
+  }
+  render();
+}
+
+init();
+</script>
+<!--
+╔══════════════════════════════════════════════════════════╗
+║  FIREBASE SETUP — 10-minute one-time process            ║
+╠══════════════════════════════════════════════════════════╣
+║  1. Go to https://console.firebase.google.com           ║
+║  2. Click "Add project" → name it (e.g. "over-and-out") ║
+║  3. Disable Google Analytics (optional, simplifies)     ║
+║  4. In sidebar: Build → Realtime Database               ║
+║  5. Click "Create Database" → choose a region           ║
+║  6. Start in TEST MODE (OK for friend play)             ║
+║  7. In sidebar: Project Settings (gear icon)            ║
+║  8. Under "Your apps" → click </> (Web app)             ║
+║  9. Register app → copy the firebaseConfig object       ║
+║ 10. Paste it into the MP.firebaseConfig in Section 6    ║
+║                                                         ║
+║  SECURITY NOTE: Test mode expires after 30 days.        ║
+║  For ongoing use, set a proper database rule:           ║
+║    { "rules": { ".read": true, ".write": true } }       ║
+║  (Still trust-based — fine for friend play)             ║
+╚══════════════════════════════════════════════════════════╝
+-->
+</body>
+</html>
